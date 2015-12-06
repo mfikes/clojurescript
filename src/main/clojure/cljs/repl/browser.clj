@@ -217,7 +217,11 @@
 ;; BrowserEnv
 
 (defn compile-client-js [opts]
-  (let [copts {:optimizations (:optimizations opts)
+  (let [;;Forbid :optimizations :none because client-js must be contained in a single file
+        optimizations (if (= (:optimizations opts) :none)
+                        :simple
+                        (:optimizations opts))
+        copts {:optimizations optimizations
                :output-dir (:working-dir opts)}]
     ;; we're inside the REPL process where cljs.env/*compiler* is already
     ;; established, need to construct a new one to avoid mutating the one
