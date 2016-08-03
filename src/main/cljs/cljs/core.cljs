@@ -11288,13 +11288,21 @@ reduces them without incurring seq initialization"
     (pr-writer (.-cause obj) writer opts))
   (-write writer "}"))
 
+(deftype ExceptionInfo [message data cause]
+  Object
+  (toString [this] (pr-str* this))
+
+  IPrintWithWriter
+  (-pr-writer [obj writer opts]
+    (pr-writer-ex-info obj writer opts)))
+
+(def ExceptionInfoTypeTemplate ExceptionInfo)
+
 (defn ^{:jsdoc ["@constructor"]}
   ExceptionInfo [message data cause]
   (let [e (js/Error. message)]
     (this-as this
-      (set! (.-message this) message)
-      (set! (.-data this) data)
-      (set! (.-cause this) cause)
+      (.call ExceptionInfoTypeTemplate this message data cause)
       (do
         (set! (.-name this) (.-name e))
         ;; non-standard
@@ -11306,16 +11314,10 @@ reduces them without incurring seq initialization"
         (set! (.-stack this) (.-stack e)))
       this)))
 
+(gobject/extend ExceptionInfo ExceptionInfoTypeTemplate)
+(set! (.. ExceptionInfo -prototype) ExceptionInfoTypeTemplate.prototype)
+(set! (.. ExceptionInfo -prototype -constructor) ExceptionInfo)
 (set! (.. ExceptionInfo -prototype -__proto__) js/Error.prototype)
-
-(extend-type ExceptionInfo
-  IPrintWithWriter
-  (-pr-writer [obj writer opts]
-    (pr-writer-ex-info obj writer opts)))
-
-(set! (.. ExceptionInfo -prototype -toString)
-  (fn []
-    (this-as this (pr-str* this))))
 
 (defn ex-info
   "Create an instance of ExceptionInfo, an Error type that carries a
