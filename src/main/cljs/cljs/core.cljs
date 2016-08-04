@@ -10827,15 +10827,14 @@ reduces them without incurring seq initialization"
 ;;; ExceptionInfo
 
 (defn- pr-writer-ex-info [obj writer opts]
-  (-write writer "#error {:message ")
-  (pr-writer (.-message obj) writer opts)
-  (when (.-data obj)
-    (-write writer ", :data ")
-    (pr-writer (.-data obj) writer opts))
-  (when (.-cause obj)
-    (-write writer ", :cause ")
-    (pr-writer (.-cause obj) writer opts))
-  (-write writer "}"))
+  (let [message (.-message obj)
+        data (.-data obj)
+        cause (.-cause obj)
+        info (cond-> {:message message}
+               (some? data) (assoc :data data)
+               (some? cause) (assoc :cause cause))]
+    (-write writer "#error ")
+    (pr-writer info writer opts)))
 
 (defn ^{:jsdoc ["@constructor"]}
   ExceptionInfo [message data cause]
