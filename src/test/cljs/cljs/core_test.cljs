@@ -1403,6 +1403,14 @@
   (testing "printing an Object with a null constructor"
     (is (= "#object[Object]" (pr-str (.create js/Object nil))))))
 
+(deftest test-cljs-1743
+  (is (= ((transient (array-map :a 1)) :a) 1))
+  (is (= ((transient (array-map :a 1)) :a :not-found) 1))
+  (is (= ((transient (array-map :a 1)) :b :not-found) :not-found))
+  (is (= ((transient (hash-map :a 1)) :a) 1))
+  (is (= ((transient (hash-map :a 1)) :a :not-found) 1))
+  (is (= ((transient (hash-map :a 1)) :b :not-found) :not-found)))
+
 (deftest test-cljs-2184
   (testing "ns-publics"
     (is (contains? (ns-publics 'clojure.string) 'join))
