@@ -5164,8 +5164,11 @@ reduces them without incurring seq initialization"
   {:added "1.0"
    :static true}
   ([f] (comp (map f) cat))
-  ([f & colls]
-     (apply concat (apply map f colls))))
+  ([f coll] (apply concat (map f coll)))
+  ([f c1 c2] (apply concat (map f c1 c2)))
+  ([f c1 c2 c3] (apply concat (map f c1 c2 c3)))
+  ([f c1 c2 c3 & colls]
+     (apply concat (apply map f c1 c2 c3 colls))))
 
 (defn filter
   "Returns a lazy sequence of the items in coll for which
