@@ -5460,12 +5460,11 @@ reduces them without incurring seq initialization"
   (hasNext [this]
     (< i end))
   (next [this]
-    (when (== (- i base) 32)
-      (set! arr (unchecked-array-for v i))
-      (set! base (+ base 32)))
-    (let [ret (aget arr (bit-and i 0x01f))]
+    (let [j (bit-and i 0x01f)]
+      (when (zero? j)
+        (set! arr (unchecked-array-for v i)))
       (set! i (inc i))
-      ret)))
+      (aget arr j))))
 
 (defn ranged-iterator [v start end]
   (let [i start]
