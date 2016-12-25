@@ -9458,25 +9458,25 @@ reduces them without incurring seq initialization"
   Returns a stateful transducer when no collection is provided."
   ([]
     (fn [rf]
-      (let [seen (volatile! #{})]
+      (let [seen (volatile! (transient {}))]
         (fn
           ([] (rf))
           ([result] (rf result))
           ([result input]
-            (if (contains? @seen input)
+            (if ^boolean (-lookup @seen input false)
               result
-              (do (vswap! seen conj input)
+              (do (vswap! seen -assoc! input true)
                   (rf result input))))))))
   ([coll]
     (let [step (fn step [xs seen]
                  (lazy-seq
                    ((fn [[f :as xs] seen]
                       (when-let [s (seq xs)]
-                        (if (contains? seen f)
+                        (if ^boolean (-lookup seen f false)
                           (recur (rest s) seen)
-                          (cons f (step (rest s) (conj seen f))))))
+                          (cons f (step (rest s) (-assoc! seen f true))))))
                      xs seen)))]
-      (step coll #{}))))
+      (step coll (transient {})))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn butlast
