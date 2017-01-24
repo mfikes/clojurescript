@@ -8,7 +8,8 @@
 
 (ns cljs.tagged-literals
   #?(:clj  (:require [clojure.instant :as inst])
-     :cljs (:require [cljs.reader :as reader])))
+     :cljs (:require [cljs.reader :as reader]))
+  #?(:clj (:import (clojure.lang IMeta IObj))))
 
 (defn read-queue
   [form]
@@ -65,7 +66,19 @@
       (and (keyword? k)
            (nil? (namespace k)))))
 
-(deftype JSValue [val])
+; note that we assume val is a vecor or a map, so it supports metadata
+#?(:clj
+  (deftype JSValue [val]
+    IMeta
+    (meta [_this] (meta val))
+    IObj
+    (withMeta [_this m] (JSValue. (with-meta val m))))
+  :cljs
+  (deftype JSValue [val]
+    IMeta
+    (-meta [_this] (meta val))
+    IWithMeta
+    (-with-meta [_this m] (JSValue. (with-meta val m)))))
 
 (defn read-js
   [form]
@@ -82,7 +95,7 @@
                  "JavaScript literal keys must be strings or unqualified keywords")
          :cljs (js/Error.
                  "JavaScript literal keys must be strings or unqualified keywords"))))
-  (JSValue. form))
+  (JSValue. (with-meta form nil)))
 
 (def ^:dynamic *cljs-data-readers*
   (merge ;; assumes we can read all data_readers
