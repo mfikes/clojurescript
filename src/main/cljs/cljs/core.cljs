@@ -11494,9 +11494,11 @@ reduces them without incurring seq initialization"
 (deftype Namespace [obj name]
   Object
   (findInternedVar [this sym]
-    (let [k (munge (str sym))]
-      (when ^boolean (gobject/containsKey obj k)
-        (let [var-sym (symbol (str name) (str sym))
+    (let [sym-str (str sym)
+          k (munge sym-str)]
+      (when (and (= (demunge sym-str) sym-str)
+                 ^boolean (gobject/containsKey obj k))
+        (let [var-sym (symbol (str name) sym-str)
               var-meta {:ns this}]
           (Var. (ns-lookup obj k) var-sym var-meta)))))
   (getName [_] name)
