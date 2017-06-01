@@ -2462,7 +2462,8 @@ reduces them without incurring seq initialization"
   ([keyfn coll]
    (sort-by keyfn compare coll))
   ([keyfn comp coll]
-     (sort (fn [x y] ((fn->comparator comp) (keyfn x) (keyfn y))) coll)))
+   (let [comparator (fn->comparator comp)]
+     (sort (fn [x y] (comparator (keyfn x) (keyfn y))) coll))))
 
 ; simple reduce based on seqs, used as default
 (defn- seq-reduce
