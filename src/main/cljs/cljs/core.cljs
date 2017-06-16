@@ -1401,8 +1401,6 @@
   "Returns a number one greater than num."
   [x] (cljs.core/+ x 1))
 
-(declare deref)
-
 (deftype Reduced [val]
   IDeref
   (-deref [o] val))
@@ -1425,10 +1423,8 @@
 (defn unreduced
   "If x is reduced?, returns (deref x), else returns x"
   [x]
-  (if (reduced? x) (deref x) x))
+  (if (reduced? x) (-deref x) x))
 
-;; generic to all refs
-;; (but currently hard-coded to atom!)
 (defn deref
   "Also reader macro: @var/@atom/@delay. Returns the
    most-recently-committed value of ref. When applied to a var
@@ -5198,7 +5194,7 @@ reduces them without incurring seq initialization"
            (recur nacc (inc i) arr)))
        acc))))
 
-(declare tv-editable-root tv-editable-tail TransientVector deref
+(declare tv-editable-root tv-editable-tail TransientVector
          pr-sequential-writer pr-writer chunked-seq)
 
 (defprotocol APersistentVector
@@ -6803,7 +6799,7 @@ reduces them without incurring seq initialization"
 
 (deftype Box [^:mutable val])
 
-(declare create-inode-seq create-array-node-seq reset! create-node atom deref)
+(declare create-inode-seq create-array-node-seq reset! create-node atom)
 
 (defn ^boolean key-test [key other]
   (cond
