@@ -3391,24 +3391,24 @@ reduces them without incurring seq initialization"
   "Returns a Keyword with the given namespace and name.  Do not use :
   in the keyword strings, it will be added automatically."
   ([name] (cond
+            (string? name) (let [idx (.indexOf name "/")]
+                             (if (== idx -1)
+                               (Keyword. nil name name nil)
+                               (Keyword. (.substr name 0 idx) (.substr name (inc idx)) name nil)))
             (keyword? name) name
-            (symbol? name) (Keyword.
-                             (cljs.core/namespace name)
-                             (cljs.core/name name) (.-str name) nil)
-            (string? name) (let [parts (.split name "/")]
-                             (if (== (alength parts) 2)
-                               (Keyword. (aget parts 0) (aget parts 1) name nil)
-                               (Keyword. nil (aget parts 0) name nil)))))
+            (symbol? name) (Keyword. (.-ns name) (.-name name) (.-str name) nil)))
   ([ns name]
-   (let [ns   (cond
-                (keyword? ns) (cljs.core/name ns)
-                (symbol? ns)  (cljs.core/name ns)
-                :else ns)
+   (let [ns (cond
+              (string? ns) ns
+              (keyword? ns) (.-name ns)
+              (symbol? ns) (.-name ns)
+              :else ns)
          name (cond
-                (keyword? name) (cljs.core/name name)
-                (symbol? name) (cljs.core/name name)
+                (string? name) name
+                (keyword? name) (.-name name)
+                (symbol? name) (.-name name)
                 :else name)]
-     (Keyword. ns name (str (when ns (str ns "/")) name) nil))))
+     (Keyword. ns name (if (some? ns) (.join #js[ns name] "/") name) nil))))
 
 
 (deftype LazySeq [meta ^:mutable fn ^:mutable s ^:mutable __hash]
