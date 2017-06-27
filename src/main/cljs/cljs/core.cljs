@@ -5988,7 +5988,9 @@ reduces them without incurring seq initialization"
     (VectorNode. edit (aclone (.-arr node)))))
 
 (defn- tv-editable-root [node]
-  (VectorNode. (js-obj) (aclone (.-arr node))))
+  (if (identical? (.-EMPTY_NODE PersistentVector) node)
+    (VectorNode. (js-obj) (make-array 32))
+    (VectorNode. (js-obj) (aclone (.-arr node)))))
 
 (defn- tv-editable-tail [tl]
   (let [ret (make-array 32)]
