@@ -5774,19 +5774,13 @@ reduces them without incurring seq initialization"
     (aget node off))
   (-rest [coll]
     (if (< (inc off) (alength node))
-      (let [s (chunked-seq vec node i (inc off))]
-        (if (nil? s)
-          ()
-          s))
+      (chunked-seq vec node i (inc off))
       (-chunked-rest coll)))
 
   INext
   (-next [coll]
     (if (< (inc off) (alength node))
-      (let [s (chunked-seq vec node i (inc off))]
-        (if (nil? s)
-          nil
-          s))
+      (chunked-seq vec node i (inc off))
       (-chunked-next coll)))
 
   ICollection
