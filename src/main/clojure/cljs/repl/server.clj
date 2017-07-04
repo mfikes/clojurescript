@@ -11,6 +11,7 @@
   (:require [clojure.string :as str])
   (:import java.io.BufferedReader
            java.io.InputStreamReader
+           java.net.InetAddress
            java.net.ServerSocket))
 
 (def ^:dynamic state nil)
@@ -197,7 +198,9 @@
 (defn start
   "Start the server on the specified port."
   [opts]
-  (let [ss (ServerSocket. (:port opts))]
+  (let [ss (ServerSocket. (:port opts)
+                          50
+                          (InetAddress/getByName (:host opts)))]
     (.start
       (Thread.
         ((ns-resolve 'clojure.core 'binding-conveyor-fn)

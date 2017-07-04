@@ -291,42 +291,48 @@
 
 (defn repl-env*
   [{:keys [output-dir] :as opts}]
-  (merge (BrowserEnv.)
-    {:host "localhost"
-     :port 9000
-     :working-dir (->> [".repl" (util/clojurescript-version)]
-                       (remove empty?) (string/join "-"))
-     :serve-static true
-     :static-dir (cond-> ["." "out/"] output-dir (conj output-dir))
-     :preloaded-libs []
-     :optimizations :simple
-     :src "src/"
-     :browser-state (atom {:return-value-fn nil
-                          :client-js nil})
-     :ordering (agent {:expecting nil :fns {}})
-     :es (Executors/newFixedThreadPool 16)
-     :server-state
-     (atom
-       {:socket nil
-        :connection nil
-        :promised-conn nil})}
-    opts))
+  (let [supported-optimizations? #{:whitespace
+                                   :simple}
+        {:keys [optimizations] :as opts}
+        (merge
+         {:host "localhost"
+          :port 9000
+          :working-dir (->> [".repl" (util/clojurescript-version)]
+                            (remove empty?) (string/join "-"))
+          :static-dir (cond-> ["." "out/"] output-dir (conj output-dir))
+          :optimizations :simple
+          :src "src/"
+          :browser-state (atom {:return-value-fn nil
+                                :client-js nil})
+          :ordering (agent {:expecting nil :fns {}})
+          :es (Executors/newFixedThreadPool 16)
+          :server-state
+          (atom
+           {:socket nil
+            :connection nil
+            :promised-conn nil})}
+         opts)]
+    (when-not (supported-optimizations? optimizations)
+      (throw (ex-info "Unsupported optimization"
+                      {:supported-optimizations supported-optimizations?
+                       :found-optimizations optimizations})))
+    (map->BrowserEnv opts)))
 
 (defn repl-env
   "Create a browser-connected REPL environment.
 
   Options:
 
+  host:           The host which the REPL server will bind to. Defaults to localhost.
   port:           The port on which the REPL server will run. Defaults to 9000.
   working-dir:    The directory where the compiled REPL client JavaScript will
                   be stored. Defaults to \".repl\" with a ClojureScript version
                   suffix, eg. \".repl-0.0-2138\".
-  serve-static:   Should the REPL server attempt to serve static content?
-                  Defaults to true.
   static-dir:     List of directories to search for static content. Defaults to
                   [\".\" \"out/\"].
   optimizations:  The level of optimization to use when compiling the client
-                  end of the REPL. Defaults to :simple.
+                  end of the REPL. Only :whitespace and :simple are supported.
+                  Defaults to :simple.
   src:            The source directory containing user-defined cljs files. Used to
                   support reflection. Defaults to \"src/\".
   "
