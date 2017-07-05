@@ -550,6 +550,12 @@
   (is (nil? (unsafe-get #js {:a 1} "b")))
   (is (nil? (unsafe-get #js {:a 1} nil))))
 
+(deftest memfn-test
+  (let [substr (memfn substr start length)]
+    (is (= "cde" (substr "abcdefg" 2 3))))
+  (let [trim (memfn trim)]
+    (is (= ["abc" "def"] (map trim ["   abc   " "  def   "])))))
+
 ;; =============================================================================
 ;; Tickets
 
