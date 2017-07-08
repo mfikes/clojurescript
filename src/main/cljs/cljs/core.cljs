@@ -9566,7 +9566,7 @@ reduces them without incurring seq initialization"
         (-write writer (str obj))
 
         (object? obj)
-        (do
+        (binding [*print-namespace-maps* false]
           (-write writer "#js ")
           (print-map
             (map (fn [k] [(keyword k) (aget obj k)]) (js-keys obj))

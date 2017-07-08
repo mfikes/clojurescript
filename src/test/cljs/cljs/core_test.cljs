@@ -1394,6 +1394,10 @@
     (is (= (find (ns-imports 'clojure.string) 'StringBuffer)
           ['StringBuffer goog.string.StringBuffer]))))
 
+(deftest test-cljs-2190
+  (is (= "#js {:foo/bar 33}" (binding [*print-namespace-maps* true]
+                               (pr-str (doto (js-obj) (gobject/set "foo/bar" 33)))))))
+
 (comment
   ;; ObjMap
   ;; (let [ks (map (partial str "foo") (range 500))
