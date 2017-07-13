@@ -1,4 +1,5 @@
 (ns cljs.array-access-test
+  (:require-macros [cljs.array-access.helper :refer [squelching-console-warn]])
   (:require [cljs.test :refer [deftest is]]
             [cljs.array-access.alpha :as alpha]))
 
@@ -75,46 +76,48 @@
     (is (= "x" (aget v "foo")))))
 
 (deftest checked-aget-test
-  (is (thrown? js/Error (checked-aget nil 1)))
-  (is (nil? (checked-aget #js {} 1)))
-  (is (nil? (checked-aget #js [] 0)))
-  (is (nil? (checked-aget #js [1] -1)))
-  (is (nil? (checked-aget #js [1] 1)))
-  (is (== 1 (checked-aget #js [1] "0")))
-  (is (nil? (checked-aget [1] 0)))
-  (is (== 1 (checked-aget #js [1] 0)))
-  (is (== 1 (checked-aget #js {:foo 1} "foo")))
-  (is (nil? (checked-aget #js [#js {}] 0 0)))
-  (is (nil? (checked-aget #js [#js []] 0 0)))
-  (is (nil? (checked-aget #js [#js [1]] 0 -1)))
-  (is (nil? (checked-aget #js [#js [1]] 0 1)))
-  (is (== 1 (checked-aget #js [#js [1]] 0 "0")))
-  (is (== 1 (checked-aget #js [#js [1]] 0 0))))
+  (squelching-console-warn
+    (is (thrown? js/Error (checked-aget nil 1)))
+    (is (nil? (checked-aget #js {} 1)))
+    (is (nil? (checked-aget #js [] 0)))
+    (is (nil? (checked-aget #js [1] -1)))
+    (is (nil? (checked-aget #js [1] 1)))
+    (is (== 1 (checked-aget #js [1] "0")))
+    (is (nil? (checked-aget [1] 0)))
+    (is (== 1 (checked-aget #js [1] 0)))
+    (is (== 1 (checked-aget #js {:foo 1} "foo")))
+    (is (nil? (checked-aget #js [#js {}] 0 0)))
+    (is (nil? (checked-aget #js [#js []] 0 0)))
+    (is (nil? (checked-aget #js [#js [1]] 0 -1)))
+    (is (nil? (checked-aget #js [#js [1]] 0 1)))
+    (is (== 1 (checked-aget #js [#js [1]] 0 "0")))
+    (is (== 1 (checked-aget #js [#js [1]] 0 0)))))
 
 (deftest checked-aset-test
-  (is (thrown? js/Error (checked-aset nil 1 "x")))
-  (is (= "x" (checked-aset #js {} 1 "x")))
-  (is (= "x" (checked-aset #js [] 0 "x")))
-  (is (= "x" (checked-aset #js [1] -1 "x")))
-  (is (= "x" (checked-aset #js [1] 1 "x")))
-  (is (= "x" (checked-aset #js [1] "0" "x")))
-  (is (= "x" (checked-aset [1] 0 "x")))
-  (is (= "x" (checked-aset #js [1] 0 "x")))
-  (let [v #js [1]]
-    (checked-aset v 0 "x")
-    (is (= "x" (aget v 0))))
-  (let [v #js {:foo 1}]
-    (checked-aset v "foo" "x")
-    (is (= "x" (aget v "foo"))))
-  (is (= "x" (checked-aset #js [#js {}] 0 0 "x")))
-  (is (= "x" (checked-aset #js [#js []] 0 0 "x")))
-  (is (= "x" (checked-aset #js [#js [1]] 0 -1 "x")))
-  (is (= "x" (checked-aset #js [#js [1]] 0 1 "x")))
-  (is (= "x" (checked-aset #js [#js [1]] 0 "0" "x")))
-  (is (= "x" (checked-aset #js [#js [1]] 0 0 "x")))
-  (let [v #js [#js [1]]]
-    (checked-aset v 0 0 "x")
-    (is (= "x" (aget v 0 0)))))
+  (squelching-console-warn
+    (is (thrown? js/Error (checked-aset nil 1 "x")))
+    (is (= "x" (checked-aset #js {} 1 "x")))
+    (is (= "x" (checked-aset #js [] 0 "x")))
+    (is (= "x" (checked-aset #js [1] -1 "x")))
+    (is (= "x" (checked-aset #js [1] 1 "x")))
+    (is (= "x" (checked-aset #js [1] "0" "x")))
+    (is (= "x" (checked-aset [1] 0 "x")))
+    (is (= "x" (checked-aset #js [1] 0 "x")))
+    (let [v #js [1]]
+      (checked-aset v 0 "x")
+      (is (= "x" (aget v 0))))
+    (let [v #js {:foo 1}]
+      (checked-aset v "foo" "x")
+      (is (= "x" (aget v "foo"))))
+    (is (= "x" (checked-aset #js [#js {}] 0 0 "x")))
+    (is (= "x" (checked-aset #js [#js []] 0 0 "x")))
+    (is (= "x" (checked-aset #js [#js [1]] 0 -1 "x")))
+    (is (= "x" (checked-aset #js [#js [1]] 0 1 "x")))
+    (is (= "x" (checked-aset #js [#js [1]] 0 "0" "x")))
+    (is (= "x" (checked-aset #js [#js [1]] 0 0 "x")))
+    (let [v #js [#js [1]]]
+      (checked-aset v 0 0 "x")
+      (is (= "x" (aget v 0 0))))))
 
 (deftest checked-aget'-test
   (is (thrown? js/Error (checked-aget' nil 1)))
