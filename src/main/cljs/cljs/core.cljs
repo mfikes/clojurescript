@@ -61,21 +61,25 @@
   ^{:dynamic true}
   *assert* true)
 
+(def ^:private default-print-fn
+  (fn [_]
+    (throw (js/Error. "No *print-fn* fn set for evaluation environment"))))
+
 (defonce
   ^{:doc "Each runtime environment provides a different way to print output.
   Whatever function *print-fn* is bound to will be passed any
   Strings which should be printed." :dynamic true}
-  *print-fn*
+  *print-fn* default-print-fn)
+
+(def ^:private default-print-err-fn
   (fn [_]
-    (throw (js/Error. "No *print-fn* fn set for evaluation environment"))))
+    (throw (js/Error. "No *print-err-fn* fn set for evaluation environment"))))
 
 (defonce
   ^{:doc "Each runtime environment provides a different way to print error output.
   Whatever function *print-err-fn* is bound to will be passed any
   Strings which should be printed." :dynamic true}
-  *print-err-fn*
-  (fn [_]
-    (throw (js/Error. "No *print-err-fn* fn set for evaluation environment"))))
+  *print-err-fn* default-print-err-fn)
 
 (defn set-print-fn!
   "Set *print-fn* to f."
@@ -438,7 +442,8 @@
 
 (defn- maybe-warn
   [e]
-  (when *print-err-fn*
+  (when-not (or (nil? *print-err-fn*)
+                (identical? *print-err-fn* default-print-err-fn))
     (*print-err-fn* e)))
 
 (defn- checked-aget
