@@ -1191,7 +1191,7 @@
 (defn analyze-keyword
   [env sym]
   (register-constant! env sym)
-  {:op :constant :env env :form sym :tag 'cljs.core/Keyword})
+  {:op :const :env env :form sym :tag 'cljs.core/Keyword})
 
 (defn get-tag [e]
   (if-some [tag (-> e :tag)]
@@ -1234,8 +1234,8 @@
 (defn infer-if [env e]
   (let [{{:keys [op form]} :test} e
         then-tag (infer-tag env (:then e))]
-    (if (and #?(:clj (= op :constant)
-                :cljs (keyword-identical? op :constant))
+    (if (and #?(:clj (= op :const)
+                :cljs (keyword-identical? op :const))
              (not (nil? form))
              (not (false? form)))
       then-tag
@@ -1292,7 +1292,7 @@
         :def      (infer-tag env (:init e))
         :invoke   (infer-invoke env e)
         :if       (infer-if env e)
-        :constant (case (:form e)
+        :const    (case (:form e)
                     true BOOLEAN_SYM
                     false BOOLEAN_SYM
                     ANY_SYM)
@@ -1376,7 +1376,7 @@
     (assert (every? (fn [t]
                       (or
                         (-> t :info :const)
-                        (and (= :constant (:op t))
+                        (and (= :const (:op t))
                              ((some-fn number? string? char?) (:form t)))))
               (apply concat tests))
       "case* tests must be numbers, strings, or constants")
@@ -1464,7 +1464,7 @@
 
 (defn constant-value?
   [{:keys [op] :as ast}]
-  (or (= :constant op)
+  (or (= :const op)
       (and (#{:map :set :vector :list} op)
            (every? constant-value? (:children ast)))))
 
@@ -3164,7 +3164,7 @@
   (if ^boolean (:quoted? env)
     (do
       (register-constant! env sym)
-      (analyze-wrap-meta {:op :constant :env env :form sym :tag 'cljs.core/Symbol}))
+      (analyze-wrap-meta {:op :const :env env :form sym :tag 'cljs.core/Symbol}))
     (let [{:keys [line column]} (meta sym)
           env  (if-not (nil? line)
                  (assoc env :line line)
@@ -3548,7 +3548,7 @@
                    (string? form) 'string
                    (true? form) 'boolean
                    (false? form) 'boolean)]
-         (cond-> {:op :constant :env env :form form}
+         (cond-> {:op :const :env env :form form}
            tag (assoc :tag tag))))))
 
 #?(:cljs
@@ -3570,7 +3570,7 @@
                    (string? form) STRING_SYM
                    (true? form) BOOLEAN_SYM
                    (false? form) BOOLEAN_SYM)]
-         (cond-> {:op :constant :env env :form form}
+         (cond-> {:op :const :env env :form form}
            tag (assoc :tag tag))))))
 
 (defn analyze* [env form name opts]

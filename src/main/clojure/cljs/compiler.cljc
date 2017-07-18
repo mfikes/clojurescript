@@ -400,7 +400,7 @@
 (def ^:private array-map-threshold 8)
 
 (defn distinct-keys? [keys]
-  (and (every? #(= (:op %) :constant) keys)
+  (and (every? #(= (:op %) :const) keys)
        (= (count (into #{} keys)) (count keys))))
 
 (defmethod emit* :map
@@ -445,7 +445,7 @@
           (emits "cljs.core.PersistentVector.fromArray([" (comma-sep items) "], true)"))))))
 
 (defn distinct-constants? [items]
-  (and (every? #(= (:op %) :constant) items)
+  (and (every? #(= (:op %) :const) items)
        (= (count (into #{} items)) (count items))))
 
 (defmethod emit* :set
@@ -480,13 +480,13 @@
   (emit-wrap env
     (emits ns ".map__GT_" name "(" items ")")))
 
-(defmethod emit* :constant
+(defmethod emit* :const
   [{:keys [form env]}]
   (when-not (= :statement (:context env))
     (emit-wrap env (emit-constant form))))
 
 (defn truthy-constant? [{:keys [op form const-expr]}]
-  (or (and (= op :constant)
+  (or (and (= op :const)
            form
            (not (or (and (string? form) (= form ""))
                     (and (number? form) (zero? form)))))
@@ -494,7 +494,7 @@
            (truthy-constant? const-expr))))
 
 (defn falsey-constant? [{:keys [op form const-expr]}]
-  (or (and (= op :constant)
+  (or (and (= op :const)
            (or (false? form) (nil? form)))
       (and (some? const-expr)
            (falsey-constant? const-expr))))
@@ -926,7 +926,7 @@
         (when name
           (emits "catch (" (munge name) "){" catch "}"))
         (when finally
-          (assert (not= :constant (:op finally)) "finally block cannot contain constant")
+          (assert (not= :const (:op finally)) "finally block cannot contain constant")
           (emits "finally {" finally "}"))
         (when (= :expr context)
           (emits "})()")))
@@ -996,7 +996,7 @@
         protocol (:protocol info)
         tag      (ana/infer-tag env (first (:args expr)))
         proto? (and protocol tag
-                 (or (and ana/*cljs-static-fns* protocol (= tag 'not-native)) 
+                 (or (and ana/*cljs-static-fns* protocol (= tag 'not-native))
                      (and
                        (or ana/*cljs-static-fns*
                            (:protocol-inline env))
@@ -1017,7 +1017,7 @@
                     (not (contains? (::ana/namespaces @env/*compiler*) ns))))
 
         keyword? (or (= 'cljs.core/Keyword (ana/infer-tag env f))
-                     (and (= (-> f :op) :constant)
+                     (and (= (-> f :op) :const)
                           (keyword? (-> f :form))))
         [f variadic-invoke]
         (if fn?
@@ -1079,7 +1079,7 @@
 
        (or fn? js? goog?)
        (emits f "(" (comma-sep args)  ")")
-       
+
        :else
        (if (and ana/*cljs-static-fns* (= (:op f) :var))
          ;; higher order case, static information missing
