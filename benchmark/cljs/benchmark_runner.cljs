@@ -1,7 +1,8 @@
 (ns cljs.benchmark-runner
   (:refer-clojure :exclude [println])
   (:require [cljs.reader :as reader]
-            [clojure.core.reducers :as r]))
+            [clojure.core.reducers :as r]
+            [clojure.string :as string]))
 
 (def println print)
 
@@ -396,4 +397,10 @@
 (simple-benchmark [] (str "1") 1000000)
 (simple-benchmark [] (str "1" "2") 1000000)
 (simple-benchmark [] (str "1" "2" "3") 1000000)
+(println)
+
+(println "\n")
+(println ";;; clojure.string")
+(simple-benchmark [s "a" f clojure.string/capitalize] (f s) 1000000)
+(simple-benchmark [s "aBcDeF" f clojure.string/capitalize] (f s) 1000000)
 (println)
