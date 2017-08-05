@@ -224,7 +224,7 @@
 (defn ^boolean blank?
   "True is s is nil, empty, or contains only whitespace."
   [s]
-  (gstring/isEmptySafe s))
+  (gstring/isEmptyOrWhitespace (gstring/makeSafe s)))
 
 (defn escape
   "Return a new string, using cmap to escape each character ch
