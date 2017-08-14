@@ -194,7 +194,10 @@
     (is (= (apply mod [4 2]) 0))
     (is (= (mod 3 2) 1))
     (is (= (apply mod [3 2]) 1))
-    (is (= (mod -2 5) 3)))
+    (is (= (mod -2 5) 3))
+    (is (= (mod 2.1 3) 2.1))
+    (is (= (mod 3.1 2) 1.1))
+    (is (= (mod -2.1 -3) -2.1)))
 
   (testing "Testing numeric equality in collections"
     (is (= [4 3 2 1 0]
