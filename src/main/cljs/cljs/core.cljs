@@ -2850,17 +2850,13 @@ reduces them without incurring seq initialization"
   [n d]
   (cljs.core/js-mod n d))
 
-(defn double-mod
-  [n d]
-  (js-mod (+ (js-mod n d) d) d))
-
 (defn mod
   "Modulus of num and div. Truncates toward negative infinity."
-  [a b]
-  (if (or (and (pos? a) (pos? b))
-          (and (neg? a) (neg? b)))
-    (js-mod a b)
-    (double-mod a b)))
+  [n d]
+  (if (or (and (pos? n) (pos? d))
+          (and (neg? n) (neg? d)))
+    (js-mod n d)
+    (js-mod (+ (js-mod n d) d) d)))
 
 (defn quot
   "quot[ient] of dividing numerator by denominator."
