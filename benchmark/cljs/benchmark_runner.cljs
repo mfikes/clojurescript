@@ -196,6 +196,12 @@
 (simple-benchmark [coll (array-map 'foo 'bar 'baz 'woz 'lol 'rofl)] (-lookup coll 'lol) 1000000)
 (println)
 
+(println ";;; js->clj")
+(simple-benchmark [obj (js-obj "a" 1 "b" 2)] (js->clj obj) 1000)
+(simple-benchmark [obj (js-obj "a" 1 "b" 2 "c" 3 "d" 4 "e" 5 "f" 6)] (js->clj obj) 1000)
+(simple-benchmark [sub-obj (js-obj "g" 7 "h" 8 "i" 9 "j" 10)
+                   obj (js-obj "a" 1 "b" 2 "c" 3 "d" 4 "e" 5 "f" 6 "s" sub-obj)] (js->clj obj) 1000)
+
 (def data-atom (atom {:x 0}))
 
 (println ";;; map / record ops")
