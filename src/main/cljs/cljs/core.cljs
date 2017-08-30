@@ -10758,9 +10758,10 @@ reduces them without incurring seq initialization"
                          (transient []) x))
 
                 (identical? (type x) js/Object)
-                (persistent!
-                 (reduce (fn [r k] (assoc! r (keyfn k) (thisfn (gobject/get x k))))
-                         (transient {}) (js-keys x)))
+                (let [result (volatile! (transient {}))]
+                  (gobject/forEach x (fn [val key _] (vswap! result assoc! (keyfn key) (thisfn val))))
+                  (persistent! @result))
+
                 :else x))]
       (f x))))
 
