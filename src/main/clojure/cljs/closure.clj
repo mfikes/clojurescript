@@ -446,8 +446,8 @@
            as-file (io/as-file file)]
        (when (and as-file (not (.isAbsolute as-file)))
          file))))
-  (-provides [this] (map name (:provides this)))
-  (-requires [this] (map name (:requires this)))
+  (-provides [this] (map str (:provides this)))
+  (-requires [this] (map str (:requires this)))
   (-source
     ([this] (deps/-source this nil))
     ([this opts]
