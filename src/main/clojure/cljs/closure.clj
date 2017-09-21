@@ -336,8 +336,8 @@
                          ext)))
         load-js (fn [ext]
                   (map #(js-source-file (.getFile %) (slurp %)) ext))]
-    (let [js-sources  (-> externs filter-js add-target load-js)
-          ups-sources (-> ups-externs filter-cp-js load-js)
+    (let [js-sources  (-> (distinct externs) filter-js add-target load-js)
+          ups-sources (-> (distinct ups-externs) filter-cp-js load-js)
           all-sources (vec (concat js-sources ups-sources))]
       (cond->
         (if use-only-custom-externs
