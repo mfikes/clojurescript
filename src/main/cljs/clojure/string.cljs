@@ -210,7 +210,7 @@
       (if (== length index)
         (. buffer (toString))
         (let [ch (.charAt s index)
-              replacement (get cmap ch)]
+              replacement (cmap ch)]
           (if-not (nil? replacement)
             (.append buffer (str replacement))
             (.append buffer ch))
