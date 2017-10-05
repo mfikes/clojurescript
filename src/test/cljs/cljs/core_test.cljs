@@ -1211,6 +1211,9 @@
                         (+ acc x)))
           [2 4 6 :stop 8 10]))))
 
+(deftest test-cljs-1631
+  (is (= "Symbol(x)" (str (.for js/Symbol "x")))))
+
 (deftest test-cljs-1721
   (is (= 1          (get-in {:a (array 1 2 3 4)} [:a 0] :not-found)))
   (is (= :not-found (get-in {:a (array 1 2 3 4)} [:a 4] :not-found)))
