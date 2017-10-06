@@ -1477,6 +1477,10 @@
   (is (= "##Inf" (pr-str js/Infinity)))
   (is (= "##-Inf" (pr-str js/-Infinity))))
 
+(deftest test-cljs-2379
+  (is (= "0" (pr-str 0)))
+  (is (= "-0.0" (pr-str -0.0))))
+
 (comment
   ;; ObjMap
   ;; (let [ks (map (partial str "foo") (range 500))

@@ -9668,6 +9668,7 @@ reduces them without incurring seq initialization"
             ^boolean (js/isNaN obj) "##NaN"
             (identical? obj js/Number.POSITIVE_INFINITY) "##Inf"
             (identical? obj js/Number.NEGATIVE_INFINITY) "##-Inf"
+            (zero? obj) (if (neg? (/ obj)) "-0.0" "0")
             :else (str obj)))
 
         (object? obj)
