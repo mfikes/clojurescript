@@ -8761,9 +8761,9 @@ reduces them without incurring seq initialization"
         (let [key   (first keys)
               entry (get map key ::not-found)]
           (recur
-           (if (not= entry ::not-found)
-             (assoc ret key entry)
-             ret)
+           (if (keyword-identical? entry ::not-found)
+             ret
+             (assoc ret key entry))
            (next keys)))
         (-with-meta ret (meta map)))))
 

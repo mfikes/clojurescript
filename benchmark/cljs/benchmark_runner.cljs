@@ -284,6 +284,12 @@
         (persistent! m)
         (recur (inc i) (assoc! m i i))))))
 
+(println ";;; select-keys")
+(simple-benchmark [m {:a 1 :b 2 :c 3 :d 4}] (select-keys m [:a :b :c]) 200000)
+(simple-benchmark [m {:a 1 :b 2 :c 3 :d 4}] (select-keys m [:a :b :x]) 200000)
+(simple-benchmark [m {:a 1 :b 2 :c 3 :d 4}] (select-keys m [:a :b :c :x :y :z]) 200000)
+(println)
+
 (println ";;; set ops")
 (simple-benchmark [] #{} 1000000)
 (simple-benchmark [] #{1 2 3} 1000000)
