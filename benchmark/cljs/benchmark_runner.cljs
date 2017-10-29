@@ -414,6 +414,12 @@
 (simple-benchmark [s "a" f clojure.string/capitalize] (f s) 1000000)
 (simple-benchmark [s "aBcDeF" f clojure.string/capitalize] (f s) 1000000)
 
+(println ";;; printing of js objects")
+(simple-benchmark [obj (js-obj "a" 1 "b" 2)] (pr-str obj) 1000)
+(simple-benchmark [obj (js-obj "a" 1 "b" 2 "c" 3 "d" 4 "e" 5 "f" 6)] (pr-str obj) 1000)
+(simple-benchmark [sub-obj (js-obj "g" 7 "h" 8 "i" 9 "j" 10)
+                   obj (js-obj "a" 1 "b" 2 "c" 3 "d" 4 "e" 5 "f" 6 "s" sub-obj)] (pr-str obj) 1000)
+
 (println ";; printing of numbers and handling of ##Nan, ##Inf, ##-Inf")
 (simple-benchmark [x true] (pr-str x) 1000000)
 (simple-benchmark [x 10] (pr-str x) 1000000)
