@@ -1106,9 +1106,6 @@
   (-deref [_] (val))
   IMeta
   (-meta [_] _meta)
-  IWithMeta
-  (-with-meta [_ new-meta]
-    (Var. val sym new-meta))
   IEquiv
   (-equiv [this other]
     (if (instance? Var other)
