@@ -10,6 +10,7 @@
   (:require
     [cljs.analyzer :as ana]
     [cljs.analyzer.api :as ana-api]
+    [cljs.env :as env]
     [clojure.string :as string]
     [cljs.spec.alpha :as s]
     [cljs.spec.gen.alpha :as gen]))
@@ -32,11 +33,26 @@
   `(binding [*instrument-enabled* nil]
      ~@body))
 
+(defn- not-multi-dispatch-with-static-fns?
+  [v]
+  ;; If :static-fns enabled, multi-arity and variadic fns are not instrumentable
+  (let [instrumentable? (or (nil? (:top-fn v))
+               (not (-> @env/*compiler* :options :static-fns)))]
+    (when-not instrumentable?
+      (ana/warning :non-instrumentable-under-static-fns nil {:var v}))
+    instrumentable?))
+
+(defn- instrumentable?
+  "Returns true iff v represent an instrumentable Var."
+  [v]
+  (and (nil? (:const v))
+       #?(:cljs (nil? (:macro v)))
+       (not-multi-dispatch-with-static-fns? v)))
+
 (defmacro instrument-1
   [[quote s] opts]
   (when-let [v (ana-api/resolve &env s)]
-    (when (and (nil? (:const v))
-               #?(:cljs (nil? (:macro v))))
+    (when (instrumentable? v)
       (swap! instrumented-vars conj (:name v))
       `(let [checked# (instrument-1* '~s (var ~s) ~opts)]
          (when checked# (set! ~s checked#))

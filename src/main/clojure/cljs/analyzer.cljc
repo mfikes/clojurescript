@@ -154,7 +154,8 @@
    :unsupported-js-module-type true
    :unsupported-preprocess-value true
    :js-shadowed-by-local true
-   :infer-warning false})
+   :infer-warning false
+   :non-instrumentable-under-static-fns true})
 
 (defn unchecked-arrays? []
   *unchecked-arrays*)
@@ -479,6 +480,10 @@
                    " for inferred type " type  " in expression " form)
     :object   (str "Adding extern to Object for property " property " due to "
                    "ambiguous expression " form)))
+
+(defmethod error-message :non-instrumentable-under-static-fns
+  [warning-type {{name :name {variadic :variadic} :top-fn} :var}]
+  (str name " cannot be instrumented (it is " (if variadic "variadic" "multi-arity") " and :static-fns is enabled)"))
 
 (defn default-warning-handler [warning-type env extra]
   (when (warning-type *cljs-warnings*)
