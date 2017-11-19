@@ -2711,7 +2711,8 @@
   (let [;; Modules from both :foreign-libs (compiler options) and :ups-foreign-libs (deps.cljs)
         ;; are processed together, so that files from both sources can depend on each other.
         ;; e.g. commonjs module in :foreign-libs can depend on commonjs module from :ups-foreign-libs.
-        js-modules (filter :module-type (concat (:foreign-libs opts) (:ups-foreign-libs opts)))]
+        js-modules (filter :module-type (concat (:foreign-libs opts) (:ups-foreign-libs opts)))
+        js-modules (distinct js-modules)]
     (if (seq js-modules)
       (util/measure (:compiler-stats opts)
         "Process JS modules"
