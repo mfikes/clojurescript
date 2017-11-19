@@ -27,9 +27,10 @@
 (defn f-2391 [] 1)
 (s/fdef f-2391 :args (s/cat) :ret #{2})
 
-(deftest test-cljs-2391
-  (is (= 1 (f-2391)))
+(deftest test-cljs-2391-a
   (stest/instrument `f-2391 {:stub #{`f-2391}})
-  (is (= 2 (f-2391)))
+  (is (= 2 (f-2391))))
+
+(deftest test-cljs-2391-b
   (stest/unstrument `f-2391)
   (is (= 1 (f-2391))))
