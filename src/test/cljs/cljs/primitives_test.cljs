@@ -528,7 +528,13 @@
     (is (= (re-matches (re-pattern "(?i)foo") "Foo") "Foo"))
     ; new RegExp("").source => "(?:)" on webkit-family envs, "" elsewhere
     (is (#{"#\"\"" "#\"(?:)\""} (pr-str #"")))
-    (is (= (re-find (re-pattern "[\u2028]") " \u2028 ") "\u2028")))) ; regression test for CLJS-889
+    (is (= (re-find (re-pattern "[\u2028]") " \u2028 ") "\u2028")) ; regression test for CLJS-889
+    (is (= (re-find (re-pattern "[\u2028]") " \u2028 ") "\u2028"))  ; regression test for CLJS-889
+    (testing "CLJS-1458"
+      (is (= (re-matches #"(a|aa)" "aa") ["aa" "aa"]))
+      (is (= (re-matches #"^(a|aa)$" "aa") ["aa" "aa"]))
+      (is (= (re-matches #"(a|aa)" "aA") nil))
+      (is (= (re-matches #"(?i)(a|aa)" "aA") ["aA" "aA"])))))
 
 (deftest test-arrays
   (testing "Testing array operations"
