@@ -9963,10 +9963,11 @@ reduces them without incurring seq initialization"
   "Returns the result of (re-find re s) if re fully matches s."
   [re s]
   (if (string? s)
-    (let [matches (.exec re s)]
-      (when (= (first matches) s)
-        (if (== (count matches) 1)
-          (first matches)
+    (let [re (js/RegExp. (str "^" (.-source re) "$")
+                         (if (.-ignoreCase re) "i" ""))]
+      (when-let [matches (.exec re s)]
+        (if (== (alength matches) 1)
+          (aget matches 0)
           (vec matches))))
     (throw (js/TypeError. "re-matches must match against a string."))))
 
