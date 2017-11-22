@@ -2596,13 +2596,11 @@ reduces them without incurring seq initialization"
   ([x y] (cljs.core/* x y))
   ([x y & more] (reduce * (cljs.core/* x y) more)))
 
-(declare divide)
-
 (defn ^number /
   "If no denominators are supplied, returns 1/numerator,
   else returns numerator divided by all of the denominators."
   ([x] (/ 1 x))
-  ([x y] (cljs.core/divide x y)) ;; FIXME: waiting on cljs.core//
+  ([x y] (cljs.core// x y))
   ([x y & more] (reduce / (/ x y) more)))
 
 (defn ^boolean <
@@ -2719,7 +2717,7 @@ reduces them without incurring seq initialization"
   "If no denominators are supplied, returns 1/numerator,
   else returns numerator divided by all of the denominators."
   ([x] (unchecked-divide-int 1 x))
-  ([x y] (cljs.core/divide x y)) ;; FIXME: waiting on cljs.core//
+  ([x y] (cljs.core// x y))
   ([x y & more] (reduce unchecked-divide-int (unchecked-divide-int x y) more)))
 
 (defn unchecked-inc [x]

@@ -40,7 +40,7 @@
                             ns-unmap var vswap! macroexpand-1 macroexpand
                             some? resolve
                             #?@(:cljs [alias coercive-not coercive-not= coercive-= coercive-boolean
-                                       truth_ js-arguments js-delete js-in js-debugger exists? divide js-mod
+                                       truth_ js-arguments js-delete js-in js-debugger exists? js-mod
                                        unsafe-bit-and bit-shift-right-zero-fill mask bitpos caching-hash
                                        defcurried rfn specify! js-this this-as implements? array js-obj
                                        simple-benchmark gen-apply-to js-str es6-iterable load-file* undefined?
@@ -1101,11 +1101,6 @@
   ([x y & more] `(* (* ~x ~y) ~@more)))
 
 (core/defmacro ^::ana/numeric /
-  ([x] `(/ 1 ~x))
-  ([x y] (core/list 'js* "(~{} / ~{})" x y))
-  ([x y & more] `(/ (/ ~x ~y) ~@more)))
-
-(core/defmacro ^::ana/numeric divide
   ([x] `(/ 1 ~x))
   ([x y] (core/list 'js* "(~{} / ~{})" x y))
   ([x y & more] `(/ (/ ~x ~y) ~@more)))

@@ -1501,6 +1501,10 @@
   (is (map-entry? (MapEntry. :key :val 0)))
   (is (not (map-entry? [:key :val]))))
 
+(deftest test-cljs-2409
+  (is (== 2 (apply / [6 3])))
+  (is (== 2 (unchecked-divide-int 6 3))))
+
 (deftype Foo2455 []
   ISequential)
 
