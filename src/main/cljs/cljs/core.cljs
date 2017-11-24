@@ -6491,16 +6491,15 @@ reduces them without incurring seq initialization"
 
   IKVReduce
   (-kv-reduce [coll f init]
-    (let [len (alength keys)]
-      (loop [keys (.sort keys obj-map-compare-keys)
-             init init]
-        (if (seq keys)
-          (let [k (first keys)
-                init (f init k (unchecked-get strobj k))]
-            (if (reduced? init)
-              @init
-              (recur (rest keys) init)))
-          init))))
+    (loop [keys (.sort keys obj-map-compare-keys)
+           init init]
+      (if (seq keys)
+        (let [k (first keys)
+              init (f init k (unchecked-get strobj k))]
+          (if (reduced? init)
+            @init
+            (recur (rest keys) init)))
+        init)))
 
   IMap
   (-dissoc [coll k]
