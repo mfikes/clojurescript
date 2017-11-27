@@ -1961,6 +1961,14 @@
     (is (= 1 (count @ws)))
     (is (string/starts-with? (first @ws) "Cannot infer target type"))))
 
+(deftest test-cljs-1558
+  (binding [a/*cljs-ns* a/*cljs-ns*]
+    (e/with-compiler-env test-cenv
+      (a/analyze test-env '(require '[clojure.set :refer [intersection]]))
+      (is (thrown-with-msg? Exception
+            #"intersection already refers to: #'clojure.set/intersection in namespace cljs.core"
+            (a/analyze test-env '(def intersection 3)))))))
+
 (deftest test-cljs-1970-infer-with-cljs-literals
   (let [ws  (atom [])
         res (infer-test-helper
