@@ -1909,7 +1909,9 @@
                            (with-meta sym {::no-resolve true}))
                       conj-to-set (fnil conj #{})]
                   (when (public-name? (:ns ev) sym)
-                    (warning :redef env {:sym sym :ns (:ns ev) :ns-name ns-name}))
+                    (if (= 'cljs.core (:ns ev))
+                      (warning :redef env {:sym sym :ns (:ns ev) :ns-name ns-name})
+                      (throw (error env (str sym " already refers to: #'" (:ns ev) "/" sym " in namespace " ns-name)))))
                   (swap! env/*compiler* update-in [::namespaces ns-name :excludes]
                      conj-to-set sym)
                   (update-in env [:ns :excludes] conj-to-set sym))
