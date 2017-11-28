@@ -29,8 +29,10 @@
                      [cljs.env :as env]
                      [cljs.analyzer :as ana]
                      [cljs.source-map :as sm]))
-  #?(:clj (:import java.lang.StringBuilder
-                   java.io.File)
+  #?(:clj
+           (:import java.lang.StringBuilder
+                    java.io.File
+                    (clojure.lang IMapIterable))
      :cljs (:import [goog.string StringBuffer])))
 
 #?(:clj (set! *warn-on-reflection* true))
@@ -53,24 +55,28 @@
 
 (def cljs-reserved-file-names #{"deps.cljs"})
 
-(defn get-first-ns-segment
-  "Gets the part up to the first `.` of a namespace.
-   Returns the empty string for nil.
-   Returns the entire string if no `.` in namespace"
-  [ns]
-  (let [ns (str ns)
-        idx (.indexOf ns ".")]
-    (if (== -1 idx)
-      ns
-      (subs ns 0 idx))))
+(defn ns-segment-eq?
+  "Returns true if the part up to the first `.` of a namespace `ns`.
+   is the same as `seg`. If no `.` found, just compares the strings.
+   `segc` is the number of characters in `seg`."
+  [ns ^String seg segc]
+  (let [ns (str ns)]
+    (and #?(:clj  (.startsWith ns seg)
+            :cljs (gstring/startsWith ns seg))
+         (or (== segc #?(:clj (.length ns) :cljs (.-length ns)))
+             (and (< segc #?(:clj (.length ns) :cljs (.-length ns)))
+                  (identical? (.charAt ns segc) \.))))))
 
-(defn find-ns-starts-with [needle]
-  (reduce-kv
-    (fn [xs ns _]
-      (when (= needle (get-first-ns-segment ns))
-        (reduced needle)))
-    nil
-    (::ana/namespaces @env/*compiler*)))
+(defn find-ns-starts-with [^String needle]
+  (let [nss (::ana/namespaces @env/*compiler*)
+        nc (count needle)
+        it #?(:clj (.keyIterator ^IMapIterable nss) :cljs (-iterator nss))]
+    (loop []
+      (when (.hasNext it)
+        (if (ns-segment-eq? #?(:clj (.next it) :cljs (key (.next it)))
+                            needle nc)
+          needle
+          (recur))))))
 
 ; Helper fn
 (defn shadow-depth [s]
