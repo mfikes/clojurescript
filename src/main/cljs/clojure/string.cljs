@@ -160,7 +160,7 @@
                    (conj parts s))))))))))
 
 (defn split-lines
-  "Splits s on \n or \r\n."
+  "Splits s on \\n or \\r\\n."
   [s]
   (split s #"\n|\r\n"))
 
