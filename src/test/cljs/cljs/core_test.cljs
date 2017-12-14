@@ -1491,6 +1491,9 @@
   (is (= "Positional factory function for cljs.core-test/Bar2407." (:doc (meta #'->Bar2407))))
   (is (= "Factory function for cljs.core-test/Bar2407, taking a map of keywords to field values." (:doc (meta #'map->Bar2407)))))
 
+(deftest test-cljs-2443
+  (is (nil? (doseq [] "not nil"))))
+
 (comment
   ;; ObjMap
   ;; (let [ks (map (partial str "foo") (range 500))
