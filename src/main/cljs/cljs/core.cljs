@@ -4809,10 +4809,6 @@ reduces them without incurring seq initialization"
   Object
   (toString [coll]
     (pr-str* coll))
-  (indexOf [coll x]
-    (-indexOf coll x 0))
-  (indexOf [coll x start]
-    (-indexOf coll x start))
 
   IPending
   (-realized? [coll]
