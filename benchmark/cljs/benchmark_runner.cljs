@@ -421,4 +421,8 @@
 (simple-benchmark [x js/Infinity] (pr-str x) 1000000)
 (simple-benchmark [x js/-Infinity] (pr-str x) 1000000)
 (simple-benchmark [x (js-obj)] (pr-str x) 1000000)
+
+(println ";; iterate")
+(simple-benchmark [] (reduce + (take 64 (iterate inc 0))) 10000)
+(simple-benchmark [] (transduce (take 64) + (iterate inc 0)) 10000)
 (println)
