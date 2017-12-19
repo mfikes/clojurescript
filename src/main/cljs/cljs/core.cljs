@@ -4786,13 +4786,13 @@ reduces them without incurring seq initialization"
   [n coll]
   [(take n coll) (drop n coll)])
 
-(deftype Repeat [meta count val ^:mutable next]
+(deftype Repeat [meta count val ^:mutable next ^:mutable __hash]
   Object
   (toString [coll]
     (pr-str* coll))
 
   IWithMeta
-  (-with-meta [coll meta] (Repeat. meta count val next))
+  (-with-meta [coll meta] (Repeat. meta count val next nil))
 
   IMeta
   (-meta [coll] meta)
@@ -4802,22 +4802,36 @@ reduces them without incurring seq initialization"
   (-first [coll]
     val)
   (-rest [coll]
-    (when (nil? next)
-      (if (pos? count)
-        (set! next (Repeat. nil (dec count) val nil))
-        (when (== -1 count)
-          coll)))
-    next)
+    (if (nil? next)
+      (if (> count 1)
+        (do
+          (set! next (Repeat. nil (dec count) val nil nil))
+          next)
+        (if (== -1 count)
+          coll
+          ()))
+      next))
 
   INext
   (-next [coll]
-    (-rest coll))
+    (if (nil? next)
+      (if (> count 1)
+        (do
+          (set! next (Repeat. nil (dec count) val nil nil))
+          next)
+        (if (== -1 count)
+          coll
+          nil))
+      next))
 
   ICollection
   (-conj [coll o] (cons o coll))
 
   IEmptyableCollection
   (-empty [coll] (-with-meta (.-EMPTY List) meta))
+
+  IHash
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISequential
   ISeqable
@@ -4853,9 +4867,9 @@ reduces them without incurring seq initialization"
 
 (defn repeat
   "Returns a lazy (infinite!, or length n if supplied) sequence of xs."
-  ([x] (Repeat. nil -1 x nil))
+  ([x] (Repeat. nil -1 x nil nil))
   ([n x] (if (pos? n)
-           (Repeat. nil n x nil)
+           (Repeat. nil n x nil nil)
            (.-EMPTY List))))
 
 (defn replicate
