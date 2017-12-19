@@ -180,6 +180,8 @@
 
     (is (= {:a 1} (meta (with-meta (iterate inc 0) {:a 1}))))
 
+    (is (= [:first 0 1] (take 3 (conj (iterate inc 0) :first))))
+
     ;; test other fns
     (is (= '(:foo 42 :foo 42) (take 4 (iterate #(if (= % :foo) 42 :foo) :foo))))
     (is (= '(1 false true true) (take 4 (iterate boolean? 1))))
