@@ -201,6 +201,14 @@
     (is (= (transduce (take 5) + 1 (iterate #(* 2 %) 2)) 63))
     ))
 
+(deftest test-repeat
+  (testing "Testing Repeat"
+    (is (= (repeat 5 :x) (repeat 5 :x)))
+    (is (= (repeat 5 :x) '(:x :x :x :x :x)))
+    (is (= (hash (repeat 5 :x)) (hash '(:x :x :x :x :x))))
+    (is (= (assoc (array-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
+    (is (= (assoc (hash-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))))
+
 (deftest test-rseq
   (testing "Testing RSeq"
     (is (= '(3 2 1) (reverse (seq (array 1 2 3)))))
