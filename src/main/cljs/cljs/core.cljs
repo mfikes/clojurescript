@@ -4843,7 +4843,9 @@ reduces them without incurring seq initialization"
 
   INext
   (-next [coll]
-    (-rest [coll]))
+    (when (nil? _next)
+      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
+    _next)
 
   ICollection
   (-conj [coll o] (cons o coll))
