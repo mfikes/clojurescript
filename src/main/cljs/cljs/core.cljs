@@ -4813,10 +4813,6 @@ reduces them without incurring seq initialization"
     (-indexOf coll x 0))
   (indexOf [coll x start]
     (-indexOf coll x start))
-  (lastIndexOf [coll x]
-    (-lastIndexOf coll x (count coll)))
-  (lastIndexOf [coll x start]
-    (-lastIndexOf coll x start))
 
   IPending
   (-realized? [coll]
@@ -4852,7 +4848,7 @@ reduces them without incurring seq initialization"
   (-empty [coll] (-with-meta (.-EMPTY List) meta))
 
   ISequential
-  
+
   IHash
   (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
