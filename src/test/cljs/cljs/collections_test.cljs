@@ -187,6 +187,7 @@
     (let [v (iterate inc 0)]
       (is (identical? v (seq v))))
 
+    (is (= 0 (first (iterate inc 0))))
     (is (= 1 (first (rest (iterate inc 0)))))
     (is (= 1 (first (next (iterate inc 0)))))
 
