@@ -4803,6 +4803,8 @@ reduces them without incurring seq initialization"
   ([f] (lazy-seq (cons (f) (repeatedly f))))
   ([n f] (take n (repeatedly f))))
 
+(def ^:private UNREALIZED-SEED #js {})
+
 (deftype Iterate [meta f prev-seed ^:mutable seed ^:mutable next ^:mutable __hash] ;; TODO __next or __rest
   Object
   (toString [coll]
@@ -4822,7 +4824,7 @@ reduces them without incurring seq initialization"
 
   IPending
   (-realized? [coll]
-    (not= seed ::unrealized-seed))
+    (not (identical? seed UNREALIZED-SEED)))
 
   IWithMeta
   (-with-meta [coll meta] (Iterate. meta f prev-seed seed next __hash))
@@ -4833,18 +4835,18 @@ reduces them without incurring seq initialization"
   ASeq                                                      ;; TODO keep this marker?
   ISeq
   (-first [coll]
-    (when (= ::unrealized-seed seed)                        ;; TODO obj for ::unrealized-seed
+    (when (identical? UNREALIZED-SEED seed)
       (set! seed (f prev-seed)))
     seed)
   (-rest [coll]
     (when (nil? next)
-      (set! next (Iterate. nil f (-first coll) ::unrealized-seed nil nil)))
+      (set! next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
     next)
 
   INext
   (-next [coll]
     (when (nil? next)
-      (set! next (Iterate. nil f (-first coll) ::unrealized-seed nil nil)))
+      (set! next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
     next)
 
   ICollection
