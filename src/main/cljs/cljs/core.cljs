@@ -4819,9 +4819,7 @@ reduces them without incurring seq initialization"
     (-lastIndexOf coll x (count coll)))
   (lastIndexOf [coll x start]
     (-lastIndexOf coll x start))
-
-  ;; TODO sval on Object? (see LazySeq)
-
+  
   IPending
   (-realized? [coll]
     (not (identical? seed UNREALIZED-SEED)))
