@@ -173,6 +173,8 @@
       (take 2 (iterate inc 0)) '(0 1)
       (take 5 (iterate inc 0)) '(0 1 2 3 4))
 
+    (is (= "(0 1 2 ...)" (binding [*print-length* 3] (pr-str (iterate inc 0)))))
+
     (is (realized? (iterate inc 0)))
     (is (not (realized? (rest (iterate inc 0)))))
 

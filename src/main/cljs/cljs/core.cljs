@@ -4859,7 +4859,7 @@ reduces them without incurring seq initialization"
   (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
 
   ISeqable
-  (-seq [coll] coll)                                        ;; TODO look into this (see LazySeq ?)
+  (-seq [coll] coll)
 
   IReduce
   (-reduce [coll rf]
@@ -10033,6 +10033,9 @@ reduces them without incurring seq initialization"
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "#{" " " "}" opts coll))
 
   Range
+  (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
+
+  Iterate
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
   ES6IteratorSeq
