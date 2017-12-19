@@ -8,7 +8,7 @@
 
 (ns cljs.collections-test
   (:refer-clojure :exclude [iter])
-  (:require [cljs.test :refer-macros [deftest testing is]]
+  (:require [cljs.test :refer-macros [deftest testing is are]]
             [clojure.string :as s]
             [clojure.set :as set]))
 
@@ -163,6 +163,24 @@
     (is (= (count (range 0 0 0)) 0))
     (is (= (take 3 (range 1 0 0)) (list 1 1 1)))
     (is (= (take 3 (range 3 1 0)) (list 3 3 3)))
+    ))
+
+(deftest test-iterate
+  (testing "Testing Iterate"
+    (are [x y] (= x y)
+      (take 0 (iterate inc 0)) ()
+      (take 1 (iterate inc 0)) '(0)
+      (take 2 (iterate inc 0)) '(0 1)
+      (take 5 (iterate inc 0)) '(0 1 2 3 4))
+
+    ;; test other fns
+    (is (= '(:foo 42 :foo 42) (take 4 (iterate #(if (= % :foo) 42 :foo) :foo))))
+    (is (= '(1 false true true) (take 4 (iterate boolean? 1))))
+    (is (= '(256 128 64 32 16 8 4 2 1 0) (take 10 (iterate #(quot % 2) 256))))
+
+    ;; reduce via transduce
+    (is (= (transduce (take 5) + (iterate #(* 2 %) 2)) 62))
+    (is (= (transduce (take 5) + 1 (iterate #(* 2 %) 2)) 63))
     ))
 
 (deftest test-rseq
