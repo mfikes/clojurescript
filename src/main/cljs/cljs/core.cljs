@@ -4830,7 +4830,7 @@ reduces them without incurring seq initialization"
   IMeta
   (-meta [coll] meta)
 
-  ASeq                                                      ;; TODO keep this marker?
+  ASeq
   ISeq
   (-first [coll]
     (when (identical? UNREALIZED-SEED seed)
