@@ -4819,7 +4819,7 @@ reduces them without incurring seq initialization"
     (-lastIndexOf coll x (count coll)))
   (lastIndexOf [coll x start]
     (-lastIndexOf coll x start))
-  
+
   IPending
   (-realized? [coll]
     (not (identical? seed UNREALIZED-SEED)))
@@ -4843,9 +4843,7 @@ reduces them without incurring seq initialization"
 
   INext
   (-next [coll]
-    (when (nil? _next)
-      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
-    _next)
+    (-rest [coll]))
 
   ICollection
   (-conj [coll o] (cons o coll))
