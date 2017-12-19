@@ -4870,13 +4870,15 @@ reduces them without incurring seq initialization"
       (loop [ret (rf first v) v v]
         (if (reduced? ret)
           @ret
-          (recur (rf ret v) (f v))))))
+          (let [v (f v)]
+            (recur (rf ret v) v))))))
   (-reduce [coll rf start]
     (let [v (-first coll)]
       (loop [ret (rf start v) v v]
         (if (reduced? ret)
           @ret
-          (recur (rf ret v) (f v)))))))
+          (let [v (f v)]
+            (recur (rf ret v) v)))))))
 
 (defn iterate
   "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
