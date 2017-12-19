@@ -4835,7 +4835,7 @@ reduces them without incurring seq initialization"
           (let [ret (f ret val)]
             (if (reduced? ret)
               @ret
-              (recur (dec i) ret)))
+              (recur (inc i) ret)))
           ret))))
   (-reduce [coll f start]
     (if (== count -1)
@@ -4843,12 +4843,12 @@ reduces them without incurring seq initialization"
         (if (reduced? ret)
           @ret
           (recur (f ret val))))
-      (loop [i 1 ret start]
+      (loop [i 0 ret start]
         (if (< i count)
           (let [ret (f ret val)]
             (if (reduced? ret)
               @ret
-              (recur (dec i) ret)))
+              (recur (inc i) ret)))
           ret)))))
 
 (defn repeat
