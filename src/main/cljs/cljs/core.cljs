@@ -4805,7 +4805,7 @@ reduces them without incurring seq initialization"
 
 (def ^:private UNREALIZED-SEED #js {})
 
-(deftype Iterate [meta f prev-seed ^:mutable seed ^:mutable _next ^:mutable __hash]
+(deftype Iterate [meta f prev-seed ^:mutable seed ^:mutable _next]
   Object
   (toString [coll]
     (pr-str* coll))
@@ -4815,7 +4815,7 @@ reduces them without incurring seq initialization"
     (not (identical? seed UNREALIZED-SEED)))
 
   IWithMeta
-  (-with-meta [coll meta] (Iterate. meta f prev-seed seed _next __hash))
+  (-with-meta [coll meta] (Iterate. meta f prev-seed seed _next))
 
   IMeta
   (-meta [coll] meta)
@@ -4828,13 +4828,13 @@ reduces them without incurring seq initialization"
     seed)
   (-rest [coll]
     (when (nil? _next)
-      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
+      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil)))
     _next)
 
   INext
   (-next [coll]
     (when (nil? _next)
-      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
+      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil)))
     _next)
 
   ICollection
@@ -4844,10 +4844,6 @@ reduces them without incurring seq initialization"
   (-empty [coll] (-with-meta (.-EMPTY List) meta))
 
   ISequential
-
-  IHash
-  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
-
   ISeqable
   (-seq [coll] coll)
 
@@ -4871,7 +4867,7 @@ reduces them without incurring seq initialization"
 (defn iterate
   "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
   {:added "1.0"}
-  [f x] (Iterate. nil f nil x nil nil))
+  [f x] (Iterate. nil f nil x nil))
 
 (defn interleave
   "Returns a lazy seq of the first item in each coll, then the second etc."
