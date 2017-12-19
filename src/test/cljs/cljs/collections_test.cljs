@@ -187,6 +187,9 @@
     (let [v (iterate inc 0)]
       (is (identical? v (seq v))))
 
+    (is (= 1 (first (rest (iterate inc 0)))))
+    (is (= 1 (first (next (iterate inc 0)))))
+
     ;; test other fns
     (is (= '(:foo 42 :foo 42) (take 4 (iterate #(if (= % :foo) 42 :foo) :foo))))
     (is (= '(1 false true true) (take 4 (iterate boolean? 1))))
