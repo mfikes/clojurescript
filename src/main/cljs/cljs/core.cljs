@@ -4805,7 +4805,7 @@ reduces them without incurring seq initialization"
 
 (def ^:private UNREALIZED-SEED #js {})
 
-(deftype Iterate [meta f prev-seed ^:mutable seed ^:mutable next ^:mutable __hash] ;; TODO __next or __rest
+(deftype Iterate [meta f prev-seed ^:mutable seed ^:mutable _next ^:mutable __hash]
   Object
   (toString [coll]
     (pr-str* coll))
@@ -4827,7 +4827,7 @@ reduces them without incurring seq initialization"
     (not (identical? seed UNREALIZED-SEED)))
 
   IWithMeta
-  (-with-meta [coll meta] (Iterate. meta f prev-seed seed next __hash))
+  (-with-meta [coll meta] (Iterate. meta f prev-seed seed _next __hash))
 
   IMeta
   (-meta [coll] meta)
@@ -4839,15 +4839,15 @@ reduces them without incurring seq initialization"
       (set! seed (f prev-seed)))
     seed)
   (-rest [coll]
-    (when (nil? next)
-      (set! next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
-    next)
+    (when (nil? _next)
+      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
+    _next)
 
   INext
   (-next [coll]
-    (when (nil? next)
-      (set! next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
-    next)
+    (when (nil? _next)
+      (set! _next (Iterate. nil f (-first coll) UNREALIZED-SEED nil nil)))
+    _next)
 
   ICollection
   (-conj [coll o] (cons o coll))
