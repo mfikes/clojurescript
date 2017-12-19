@@ -4803,10 +4803,85 @@ reduces them without incurring seq initialization"
   ([f] (lazy-seq (cons (f) (repeatedly f))))
   ([n f] (take n (repeatedly f))))
 
+(deftype Iterate [meta f prev-seed ^:mutable seed ^:mutable next ^:mutable __hash] ;; TODO __next or __rest
+  Object
+  (toString [coll]
+    (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+  (indexOf [coll x]
+    (-indexOf coll x 0))
+  (indexOf [coll x start]
+    (-indexOf coll x start))
+  (lastIndexOf [coll x]
+    (-lastIndexOf coll x (count coll)))
+  (lastIndexOf [coll x start]
+    (-lastIndexOf coll x start))
+
+  ;; TODO sval on Object? (see LazySeq)
+
+  IPending
+  (-realized? [coll]
+    (not= seed ::unrealized-seed))
+
+  IWithMeta
+  (-with-meta [coll meta] (Iterate. meta f prev-seed seed next __hash))
+
+  IMeta
+  (-meta [coll] meta)
+
+  ASeq                                                      ;; TODO keep this marker?
+  ISeq
+  (-first [coll]
+    (when (= ::unrealized-seed seed)                        ;; TODO obj for ::unrealized-seed
+      (set! seed (f prev-seed)))
+    seed)
+  (-rest [coll]
+    (when (nil? next)
+      (set! next (Iterate. nil f (-first coll) ::unrealized-seed nil nil)))
+    next)
+
+  INext
+  (-next [coll]
+    (when (nil? next)
+      (set! next (Iterate. nil f (-first coll) ::unrealized-seed nil nil)))
+    next)
+
+  ICollection
+  (-conj [coll o] (cons o coll))
+
+  IEmptyableCollection
+  (-empty [coll] (-with-meta (.-EMPTY List) meta))
+
+  ISequential
+  IEquiv
+  (-equiv [coll other] (equiv-sequential coll other))
+
+  IHash
+  (-hash [coll] (caching-hash coll hash-ordered-coll __hash))
+
+  ISeqable
+  (-seq [coll] coll)                                        ;; TODO look into this (see LazySeq ?)
+
+  IReduce
+  (-reduce [coll rf]
+    (let [first (-first coll)
+          v (f first)]
+      (loop [ret (rf first v) v v]
+        (if (reduced? ret)
+          @ret
+          (recur (rf ret v) (f v))))))
+  (-reduce [coll rf start]
+    (let [v (-first coll)]
+      (loop [ret (rf start v) v v]
+        (if (reduced? ret)
+          @ret
+          (recur (rf ret v) (f v)))))))
+
 (defn iterate
   "Returns a lazy sequence of x, (f x), (f (f x)) etc. f must be free of side-effects"
   {:added "1.0"}
-  [f x] (cons x (lazy-seq (iterate f (f x)))))
+  [f x] (Iterate. nil f nil x nil nil))
 
 (defn interleave
   "Returns a lazy seq of the first item in each coll, then the second etc."
