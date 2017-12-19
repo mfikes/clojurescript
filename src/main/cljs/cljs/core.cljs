@@ -4864,7 +4864,7 @@ reduces them without incurring seq initialization"
   IReduce
   (-reduce [coll rf]
     (let [first (-first coll)
-          v (f first)]
+          v     (f first)]
       (loop [ret (rf first v) v v]
         (if (reduced? ret)
           @ret
