@@ -165,6 +165,33 @@
     (is (= (take 3 (range 3 1 0)) (list 3 3 3)))
     ))
 
+(deftest test-cycle
+  (testing "Testing Cycle"
+    (are [x y] (= x y)
+      (cycle []) ()
+
+      (take 3 (cycle [1])) '(1 1 1)
+      (take 5 (cycle [1 2 3])) '(1 2 3 1 2)
+
+      (take 3 (cycle [nil])) '(nil nil nil)
+
+      (transduce (take 5) + (cycle [1])) 5
+      (transduce (take 5) + 2 (cycle [1])) 7
+      (transduce (take 5) + (cycle [3 7])) 23
+      (transduce (take 5) + 2 (cycle [3 7])) 25
+
+      (take 2 (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42)
+      (first (next (cycle (map #(/ 42 %) '(2 1 0))))) 42
+      (into [] (take 2) (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42))))
+
+(deftest test-repeat
+  (testing "Testing Repeat"
+    (is (= (repeat 5 :x) (repeat 5 :x)))
+    (is (= (repeat 5 :x) '(:x :x :x :x :x)))
+    (is (= (hash (repeat 5 :x)) (hash '(:x :x :x :x :x))))
+    (is (= (assoc (array-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
+    (is (= (assoc (hash-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))))
+
 (deftest test-iterate
   (testing "Testing Iterate"
     (are [x y] (= x y)
@@ -200,14 +227,6 @@
     (is (= (transduce (take 5) + (iterate #(* 2 %) 2)) 62))
     (is (= (transduce (take 5) + 1 (iterate #(* 2 %) 2)) 63))
     ))
-
-(deftest test-repeat
-  (testing "Testing Repeat"
-    (is (= (repeat 5 :x) (repeat 5 :x)))
-    (is (= (repeat 5 :x) '(:x :x :x :x :x)))
-    (is (= (hash (repeat 5 :x)) (hash '(:x :x :x :x :x))))
-    (is (= (assoc (array-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
-    (is (= (assoc (hash-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))))
 
 (deftest test-rseq
   (testing "Testing RSeq"
