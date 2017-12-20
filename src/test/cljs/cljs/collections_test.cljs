@@ -190,7 +190,40 @@
     (is (= (repeat 5 :x) '(:x :x :x :x :x)))
     (is (= (hash (repeat 5 :x)) (hash '(:x :x :x :x :x))))
     (is (= (assoc (array-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
-    (is (= (assoc (hash-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))))
+    (is (= (assoc (hash-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
+
+    (are [x y] (= x y)
+      (take 0 (repeat 7)) ()
+      (take 1 (repeat 7)) '(7)
+      (take 2 (repeat 7)) '(7 7)
+      (take 5 (repeat 7)) '(7 7 7 7 7) )
+
+    ; limited sequence
+    (are [x y] (= x y)
+      (repeat 0 7) ()
+      (repeat 1 7) '(7)
+      (repeat 2 7) '(7 7)
+      (repeat 5 7) '(7 7 7 7 7)
+
+      (repeat -1 7) ()
+      (repeat -3 7) () )
+
+    ; test different data types
+    (are [x] (= (repeat 3 x) (list x x x))
+      nil
+      false true
+      0 42
+      0.0 3.14
+      2/3
+      0M 1M
+      \c
+      "" "abc"
+      'sym
+      :kw
+      () '(1 2)
+      [] [1 2]
+      {} {:a 1 :b 2}
+      #{} #{1 2} )))
 
 (deftest test-iterate
   (testing "Testing Iterate"
@@ -227,6 +260,19 @@
     (is (= (transduce (take 5) + (iterate #(* 2 %) 2)) 62))
     (is (= (transduce (take 5) + 1 (iterate #(* 2 %) 2)) 63))
     ))
+
+(deftest test-split-at
+  (is (vector? (split-at 2 [])))
+  (is (vector? (split-at 2 [1 2 3])))
+
+  (are [x y] (= x y)
+    (split-at 2 []) [() ()]
+    (split-at 2 [1 2 3 4 5]) [(list 1 2) (list 3 4 5)]
+
+    (split-at 5 [1 2 3]) [(list 1 2 3) ()]
+    (split-at 0 [1 2 3]) [() (list 1 2 3)]
+    (split-at -1 [1 2 3]) [() (list 1 2 3)]
+    (split-at -5 [1 2 3]) [() (list 1 2 3)] ))
 
 (deftest test-rseq
   (testing "Testing RSeq"
