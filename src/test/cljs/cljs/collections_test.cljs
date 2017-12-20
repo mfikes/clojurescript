@@ -251,7 +251,7 @@
     (is (= 6 (.lastIndexOf (repeat 7 5) 5)))
     (is (= 3 (.indexOf (repeat 7 5) 5 3)))
     (is (= 3 (.lastIndexOf (repeat 7 5) 5 3)))
-    
+
     (is (= {:a 1} (meta (with-meta (repeat 5 7) {:a 1}))))
 
     (is (not (realized? (repeat 5 7))))
