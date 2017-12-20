@@ -232,6 +232,16 @@
       (repeat -1 7) ()
       (repeat -3 7) ())
 
+    ;; counts
+    (are [x y] (= (count x) x y)
+      (repeat 0 7) 0
+      (repeat 1 7) 1
+      (repeat 2 7) 2
+      (repeat 5 7) 4
+
+      (repeat -1 7) 0
+      (repeat -3 7) 0)
+    
     ; test different data types
     (are [x] (= (repeat 3 x) (list x x x))
       nil
