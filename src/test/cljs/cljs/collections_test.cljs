@@ -167,6 +167,9 @@
 
 (deftest test-cycle
   (testing "Testing Cycle"
+
+    (is (= "(1 2 3 1 2 ...)" (binding [*print-length* 5] (pr-str (cycle [1 2 3])))))
+
     (are [x y] (= x y)
       (cycle []) ()
       (cycle nil) ()
@@ -209,6 +212,9 @@
     (is (= (hash (repeat 5 :x)) (hash '(:x :x :x :x :x))))
     (is (= (assoc (array-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
     (is (= (assoc (hash-map (repeat 1 :x) :y) '(:x) :z) {'(:x) :z}))
+
+    (is (= "(7 7 7 ...)" (binding [*print-length* 3] (pr-str (repeat 7)))))
+    (is (= "(7 7 7)" (pr-str (repeat 3 7))))
 
     (are [x y] (= x y)
       (take 0 (repeat 7)) ()
