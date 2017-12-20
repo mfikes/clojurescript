@@ -4795,7 +4795,6 @@ reduces them without incurring seq initialization"
   IMeta
   (-meta [coll] meta)
 
-  ASeq
   ISeq
   (-first [coll]
     (first (.currentval coll)))
@@ -4870,7 +4869,6 @@ reduces them without incurring seq initialization"
   IMeta
   (-meta [coll] meta)
 
-  ASeq
   ISeq
   (-first [coll]
     val)
@@ -4977,7 +4975,6 @@ reduces them without incurring seq initialization"
   IMeta
   (-meta [coll] meta)
 
-  ASeq
   ISeq
   (-first [coll]
     (when (identical? UNREALIZED-SEED seed)
