@@ -4787,8 +4787,7 @@ reduces them without incurring seq initialization"
     current)
 
   IPending
-  (-realized? [coll]
-    (some? current))
+  (-realized? [coll] false)
 
   IWithMeta
   (-with-meta [coll meta] (Cycle. meta all prev current _next))
@@ -4862,6 +4861,9 @@ reduces them without incurring seq initialization"
   (lastIndexOf [coll x start]
     (-lastIndexOf coll x start))
 
+  IPending
+  (-realized? [coll] false)
+  
   IWithMeta
   (-with-meta [coll meta] (Repeat. meta count val next nil))
 

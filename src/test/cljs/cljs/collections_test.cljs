@@ -188,7 +188,7 @@
       (first (cycle [1 2 3])) 1
       (first (rest (cycle [1 2 3]))) 2
       (first (next (cycle [1 2 3]))) 2
-      (first (conj :hi (cycle [1 2 3]))) :hi
+      (first (conj (cycle [1 2 3]) :hi)) :hi
       (empty (cycle [1 2 3])) ()
       (first (next (cycle (map #(/ 42 %) '(2 1 0))))) 42
       (into [] (take 2) (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42)
