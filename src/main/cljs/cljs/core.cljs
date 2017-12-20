@@ -1896,10 +1896,10 @@ reduces them without incurring seq initialization"
 (defn nthrest
   "Returns the nth rest of coll, coll when n is 0."
   [coll n]
-    (loop [n n xs coll]
-      (if (and (pos? n) (seq xs))
-        (recur (dec n) (rest xs))
-        xs)))
+  (loop [n n xs coll]
+    (if-let [xs (and (pos? n) (seq xs))]
+      (recur (dec n) (rest xs))
+      xs)))
 
 (defn get
   "Returns the value mapped to key, not-found or nil if key not present."
@@ -9725,8 +9725,8 @@ reduces them without incurring seq initialization"
   be used to force any effects. Walks through the successive nexts of
   the seq, does not retain the head and returns nil."
   ([coll]
-   (when (seq coll)
-     (recur (next coll))))
+   (when-let [s (seq coll)]
+     (recur (next s))))
   ([n coll]
    (when (and (seq coll) (pos? n))
      (recur (dec n) (next coll)))))
