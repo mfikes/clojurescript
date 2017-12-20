@@ -4775,11 +4775,72 @@ reduces them without incurring seq initialization"
                       s)))]
        (lazy-seq (step pred coll)))))
 
+(deftype Cycle [meta all prev ^:mutable current ^:mutable next]
+  Object
+  (toString [coll]
+    (pr-str* coll))
+  (currentval [coll]
+    (when (nil? current)
+      (if-some [c (next prev)]
+        (set! current c)
+        (set! current all)))
+    current)
+
+  IPending
+  (-realized? [coll]
+    (some? current))
+
+  IWithMeta
+  (-with-meta [coll meta] (Cycle. meta all prev current next))
+
+  IMeta
+  (-meta [coll] meta)
+
+  ASeq
+  ISeq
+  (-first [coll]
+    (first (.currentval coll)))
+  (-rest [coll]
+    (when (nil? next)
+      (set! next (Cycle. nil all (.currentval coll) nil nil)))
+    next)
+
+  INext
+  (-next [coll]
+    (-rest coll))
+
+  ICollection
+  (-conj [coll o] (cons o coll))
+
+  IEmptyableCollection
+  (-empty [coll] (-with-meta (.-EMPTY List) meta))
+
+  ISequential
+  ISeqable
+  (-seq [coll] coll)
+
+  IReduce
+  (-reduce [coll f]
+    (loop [s (.currentval coll) ret (first s)]
+      (let [s (next s)
+            s (if (nil? s) all s)
+            ret (f ret (first s))]
+        (if (reduced? ret)
+          @ret
+          (recur s ret)))))
+  (-reduce [coll f start]
+    (loop [s (.currentval coll) ret start]
+      (let [ret (f ret (first s))]
+        (if (reduced? ret)
+          @ret
+          (let [s (next s)]
+            (recur (if (nil? s) all s) ret)))))))
+
 (defn cycle
   "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
-  [coll] (lazy-seq
-          (when-let [s (seq coll)]
-            (concat s (cycle s)))))
+  [coll] (if-some [vals (seq coll)]
+           (Cycle. nil vals nil vals nil)
+           (.-EMPTY List)))
 
 (defn split-at
   "Returns a vector of [(take n coll) (drop n coll)]"
@@ -10112,10 +10173,13 @@ reduces them without incurring seq initialization"
   Range
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
-  Iterate
+  Cycle
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
   Repeat
+  (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
+
+  Iterate
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
   ES6IteratorSeq
