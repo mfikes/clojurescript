@@ -4775,7 +4775,7 @@ reduces them without incurring seq initialization"
                       s)))]
        (lazy-seq (step pred coll)))))
 
-(deftype Cycle [meta all prev ^:mutable current ^:mutable next]
+(deftype Cycle [meta all prev ^:mutable current ^:mutable _next]
   Object
   (toString [coll]
     (pr-str* coll))
@@ -4791,7 +4791,7 @@ reduces them without incurring seq initialization"
     (some? current))
 
   IWithMeta
-  (-with-meta [coll meta] (Cycle. meta all prev current next))
+  (-with-meta [coll meta] (Cycle. meta all prev current _next))
 
   IMeta
   (-meta [coll] meta)
@@ -4801,9 +4801,9 @@ reduces them without incurring seq initialization"
   (-first [coll]
     (first (.currentval coll)))
   (-rest [coll]
-    (when (nil? next)
-      (set! next (Cycle. nil all (.currentval coll) nil nil)))
-    next)
+    (when (nil? _next)
+      (set! _next (Cycle. nil all (.currentval coll) nil nil)))
+    _next)
 
   INext
   (-next [coll]
