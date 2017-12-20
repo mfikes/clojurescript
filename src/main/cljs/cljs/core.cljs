@@ -4909,6 +4909,9 @@ reduces them without incurring seq initialization"
   ISequential
   ISeqable
   (-seq [coll] coll)
+  
+  IEquiv
+  (-equiv [coll other] (equiv-sequential coll other))
 
   IReduce
   (-reduce [coll f]
