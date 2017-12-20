@@ -182,7 +182,13 @@
 
       (take 2 (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42)
       (first (next (cycle (map #(/ 42 %) '(2 1 0))))) 42
-      (into [] (take 2) (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42))))
+      (into [] (take 2) (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42))
+
+    ; indexOf fns work on the finite cycle
+    (is (= -1 (.indexOf (cycle []) 19)))
+    (is (= -1 (.indexOf (cycle []) 19 2)))
+    (is (= -1 (.lastIndexOf (cycle []) 19)))
+    (is (= -1 (.lastIndexOf (cycle []) 19 2)))))
 
 (deftest test-repeat
   (testing "Testing Repeat"
