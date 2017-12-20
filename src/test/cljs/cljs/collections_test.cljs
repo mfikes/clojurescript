@@ -278,7 +278,6 @@
 
     (is (= "(0 1 2 ...)" (binding [*print-length* 3] (pr-str (iterate inc 0)))))
 
-    (is (realized? (iterate inc 0)))
     (is (not (realized? (rest (iterate inc 0)))))
 
     (is (= {:a 1} (meta (with-meta (iterate inc 0) {:a 1}))))
