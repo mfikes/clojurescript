@@ -4786,8 +4786,6 @@ reduces them without incurring seq initialization"
         (set! current all)))
     current)
 
-  ;; TODO indexof
-
   IPending
   (-realized? [coll]
     (some? current))

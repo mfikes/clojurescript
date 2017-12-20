@@ -169,6 +169,7 @@
   (testing "Testing Cycle"
     (are [x y] (= x y)
       (cycle []) ()
+      (cycle nil) ()
 
       (take 3 (cycle [1])) '(1 1 1)
       (take 5 (cycle [1 2 3])) '(1 2 3 1 2)
@@ -181,14 +182,25 @@
       (transduce (take 5) + 2 (cycle [3 7])) 25
 
       (take 2 (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42)
+      (first (cycle [1 2 3])) 1
+      (first (rest (cycle [1 2 3]))) 2
+      (first (next (cycle [1 2 3]))) 2
+      (first (conj :hi (cycle [1 2 3]))) :hi
+      (empty (cycle [1 2 3])) ()
       (first (next (cycle (map #(/ 42 %) '(2 1 0))))) 42
-      (into [] (take 2) (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42))
+      (into [] (take 2) (cycle (map #(/ 42 %) '(2 1 0)))) '(21 42)
+
+      (first (seq (cycle [1 2 3]))) 1)
 
     ; indexOf fns work on the finite cycle
     (is (= -1 (.indexOf (cycle []) 19)))
     (is (= -1 (.indexOf (cycle []) 19 2)))
     (is (= -1 (.lastIndexOf (cycle []) 19)))
-    (is (= -1 (.lastIndexOf (cycle []) 19 2)))))
+    (is (= -1 (.lastIndexOf (cycle []) 19 2)))
+
+    (is (= {:a 1} (meta (with-meta (cycle [1 2 3]) {:a 1}))))
+
+    (is (not (realized? (cycle [1 2 3]))))))
 
 (deftest test-repeat
   (testing "Testing Repeat"
