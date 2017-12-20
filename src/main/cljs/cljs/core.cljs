@@ -4786,8 +4786,6 @@ reduces them without incurring seq initialization"
   [n coll]
   [(take n coll) (drop n coll)])
 
-(def ^:private ^:const INFINITE-REPEAT -1)
-
 (deftype Repeat [meta count val ^:mutable next ^:mutable __hash]
   Object
   (toString [coll]
@@ -4821,7 +4819,7 @@ reduces them without incurring seq initialization"
         (do
           (set! next (Repeat. nil (dec count) val nil nil))
           next)
-        (if (== count INFINITE-REPEAT)
+        (if (== -1 count)
           coll
           ()))
       next))
@@ -4833,7 +4831,7 @@ reduces them without incurring seq initialization"
         (do
           (set! next (Repeat. nil (dec count) val nil nil))
           next)
-        (if (== count INFINITE-REPEAT)
+        (if (== -1 count)
           coll
           nil))
       next))
@@ -4853,7 +4851,7 @@ reduces them without incurring seq initialization"
 
   IReduce
   (-reduce [coll f]
-    (if (== count INFINITE-REPEAT)
+    (if (== count -1)
       (loop [ret (f val val)]
         (if (reduced? ret)
           @ret
@@ -4866,7 +4864,7 @@ reduces them without incurring seq initialization"
               (recur (inc i) ret)))
           ret))))
   (-reduce [coll f start]
-    (if (== count INFINITE-REPEAT)
+    (if (== count -1)
       (loop [ret (f start val)]
         (if (reduced? ret)
           @ret
@@ -4881,7 +4879,7 @@ reduces them without incurring seq initialization"
 
 (defn repeat
   "Returns a lazy (infinite!, or length n if supplied) sequence of xs."
-  ([x] (Repeat. nil INFINITE-REPEAT x nil nil))
+  ([x] (Repeat. nil -1 x nil nil))
   ([n x] (if (pos? n)
            (Repeat. nil n x nil nil)
            (.-EMPTY List))))
