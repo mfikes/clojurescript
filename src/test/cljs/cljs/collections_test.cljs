@@ -202,7 +202,7 @@
       (take 0 (repeat 7)) ()
       (take 1 (repeat 7)) '(7)
       (take 2 (repeat 7)) '(7 7)
-      (take 5 (repeat 7)) '(7 7 7 7 7) )
+      (take 5 (repeat 7)) '(7 7 7 7 7))
 
     ; limited sequence
     (are [x y] (= x y)
@@ -212,7 +212,7 @@
       (repeat 5 7) '(7 7 7 7 7)
 
       (repeat -1 7) ()
-      (repeat -3 7) () )
+      (repeat -3 7) ())
 
     ; test different data types
     (are [x] (= (repeat 3 x) (list x x x))
@@ -228,9 +228,9 @@
       () '(1 2)
       [] [1 2]
       {} {:a 1 :b 2}
-      #{} #{1 2} )
+      #{} #{1 2})
 
-    ; indexOf fns work on finite repeats
+    ; indexOf / lastIndexOf work on finite repeats
     (is (= -1 (.indexOf (repeat 7 5) 19)))
     (is (= -1 (.indexOf (repeat 7 5) 19 2)))
     (is (= -1 (.lastIndexOf (repeat 7 5) 19)))
@@ -238,7 +238,8 @@
     (is (= 0 (.indexOf (repeat 7 5) 5)))
     (is (= 6 (.lastIndexOf (repeat 7 5) 5)))
     (is (= 3 (.indexOf (repeat 7 5) 5 3)))
-    (is (= 3 (.lastIndexOf (repeat 7 5) 5 3)))))
+    (is (= 3 (.lastIndexOf (repeat 7 5) 5 3)))
+    ))
 
 (deftest test-iterate
   (testing "Testing Iterate"

@@ -4855,14 +4855,12 @@ reduces them without incurring seq initialization"
     (pr-str* coll))
   (equiv [this other]
     (-equiv this other))
-  ;; TODO optimized verssons of these
   (indexOf [coll x]
     (-indexOf coll x 0))
   (indexOf [coll x start]
     (-indexOf coll x start))
-  ;; TODO optimized versionf of these for finite case
   (lastIndexOf [coll x]
-    (-lastIndexOf coll x (count coll)))
+    (-lastIndexOf coll x count))
   (lastIndexOf [coll x start]
     (-lastIndexOf coll x start))
 
