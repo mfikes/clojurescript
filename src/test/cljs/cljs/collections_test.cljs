@@ -205,7 +205,27 @@
     (is (= {:a 1} (meta (empty (with-meta (cycle [1 2 3]) {:a 1})))))
     (is (= (take 7 (with-meta (cycle [1 2 3]) {:a 1})) (take 7 (cycle [1 2 3]))))
 
-    (is (not (realized? (cycle [1 2 3]))))))
+    (is (not (realized? (cycle [1 2 3]))))
+
+    (are [x y] (= (transduce (take x) conj (cycle [1 2 3])) y)
+      0 []
+      1 [1]
+      2 [1 2]
+      3 [1 2 3]
+      4 [1 2 3 1]
+      5 [1 2 3 1 2]
+      6 [1 2 3 1 2 3]
+      7 [1 2 3 1 2 3 1])
+
+    (are [x y] (= (transduce (take x) conj [:x] (cycle [1 2 3])) y)
+      0 [:x]
+      1 [:x 1]
+      2 [:x 1 2]
+      3 [:x 1 2 3]
+      4 [:x 1 2 3 1]
+      5 [:x 1 2 3 1 2]
+      6 [:x 1 2 3 1 2 3]
+      7 [:x 1 2 3 1 2 3 1])))
 
 (deftest test-repeat
   (testing "Testing Repeat"
@@ -235,11 +255,11 @@
       (repeat -3 7) ())
 
     ;; counts
-    (are [x y] (= (count x) x y)
+    (are [x y] (= (count x) y)
       (repeat 0 7) 0
       (repeat 1 7) 1
       (repeat 2 7) 2
-      (repeat 5 7) 4
+      (repeat 5 7) 5
 
       (repeat -1 7) 0
       (repeat -3 7) 0)
@@ -280,7 +300,30 @@
 
     (is (= () (empty (repeat 100 1))))
     (is (= () (empty (repeat 7))))
-    ))
+
+    (are [x y] (= (transduce (take x) conj (repeat 1)) y)
+      0 []
+      1 [1]
+      2 [1 1]
+      3 [1 1 1])
+
+    (are [x y] (= (transduce (take x) conj [:x] (repeat 1)) y)
+      0 [:x]
+      1 [:x 1]
+      2 [:x 1 1]
+      3 [:x 1 1 1])
+
+    (are [x y] (= (transduce (take x) conj (repeat 2 1)) y)
+      0 []
+      1 [1]
+      2 [1 1]
+      3 [1 1])
+
+    (are [x y] (= (transduce (take x) conj [:x] (repeat 2 1)) y)
+      0 [:x]
+      1 [:x 1]
+      2 [:x 1 1]
+      3 [:x 1 1])))
 
 (deftest test-iterate
   (testing "Testing Iterate"
@@ -317,7 +360,18 @@
     ;; reduce via transduce
     (is (= (transduce (take 5) + (iterate #(* 2 %) 2)) 62))
     (is (= (transduce (take 5) + 1 (iterate #(* 2 %) 2)) 63))
-    ))
+
+    (are [x y] (= (transduce (take x) conj (iterate inc 0)) y)
+      0 []
+      1 [0]
+      2 [0 1]
+      3 [0 1 2])
+
+    (are [x y] (= (transduce (take x) conj [:x] (iterate inc 0)) y)
+      0 [:x]
+      1 [:x 0]
+      2 [:x 0 1]
+      3 [:x 0 1 2])))
 
 (deftest test-split-at
   (is (vector? (split-at 2 [])))
