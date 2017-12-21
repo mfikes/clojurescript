@@ -4821,8 +4821,7 @@ reduces them without incurring seq initialization"
   IReduce
   (-reduce [coll f]
     (loop [s (.currentval coll) ret (first s)]
-      (let [s (next s)
-            s (if (nil? s) all s)
+      (let [s   (or (next s) all)
             ret (f ret (first s))]
         (if (reduced? ret)
           @ret
@@ -4832,8 +4831,7 @@ reduces them without incurring seq initialization"
       (let [ret (f ret (first s))]
         (if (reduced? ret)
           @ret
-          (let [s (next s)]
-            (recur (if (nil? s) all s) ret)))))))
+          (recur (or (next s) all) ret))))))
 
 (defn cycle
   "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
