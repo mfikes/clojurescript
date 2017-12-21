@@ -205,7 +205,7 @@
     (is (= {:a 1} (meta (empty (with-meta (cycle [1 2 3]) {:a 1})))))
     (is (= (take 7 (with-meta (cycle [1 2 3]) {:a 1})) (take 7 (cycle [1 2 3]))))
 
-    (is (not (realized? (cycle [1 2 3]))))
+    (is (realized? (cycle [1 2 3])))
 
     (are [x y] (= (transduce (take x) conj (cycle [1 2 3])) y)
       0 []

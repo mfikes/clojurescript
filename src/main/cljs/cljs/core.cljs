@@ -4787,7 +4787,8 @@ reduces them without incurring seq initialization"
     current)
 
   IPending
-  (-realized? [coll] false)
+  (-realized? [coll]
+    (some? current))
 
   IWithMeta
   (-with-meta [coll meta] (Cycle. meta all prev current _next))
