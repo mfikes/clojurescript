@@ -4780,8 +4780,8 @@ reduces them without incurring seq initialization"
   (toString [coll]
     (pr-str* coll))
   (currentval [coll]
-    (when (nil? current)
-      (if-some [c (next prev)]
+    (when-not ^seq current
+      (if-let [c (next prev)]
         (set! current c)
         (set! current all)))
     current)
@@ -4835,7 +4835,7 @@ reduces them without incurring seq initialization"
 
 (defn cycle
   "Returns a lazy (infinite!) sequence of repetitions of the items in coll."
-  [coll] (if-some [vals (seq coll)]
+  [coll] (if-let [vals (seq coll)]
            (Cycle. nil vals nil vals nil)
            (.-EMPTY List)))
 
