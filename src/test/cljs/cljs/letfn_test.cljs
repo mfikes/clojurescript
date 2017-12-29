@@ -26,3 +26,26 @@
     (is (not (od? 10)))
     (is (od? 1))
     (is (od? 11))))
+
+(letfn [(f [] 1)]
+  (defn f1 [] (f)))
+
+(letfn [(f [] 2)]
+  (defn f2 [] (f)))
+
+(deftest letfn-statement-tests
+  (is (= (f1) 1))
+  (is (= (f2) 2)))
+
+(let [containing-environment {}]
+  (letfn [(g [] 3)]
+    (defn f3 [] (g)))
+
+  (letfn [(g [] 4)]
+    (defn f4 [] (g))))
+
+(deftest letfn-expression-tests
+  (is (= (f3) 3))
+  (is (= (f4) 4)))
+
+
