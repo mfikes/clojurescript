@@ -1517,7 +1517,7 @@
   (is (nil? (re-seq #"\w+" ""))))
 
 (deftest test-cljs-2001
-  (is (map-entry? (MapEntry. :key :val)))
+  (is (map-entry? (MapEntry. :key :val 0)))
   (is (not (map-entry? [:key :val]))))
 
 (comment
