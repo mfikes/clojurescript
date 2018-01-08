@@ -947,3 +947,8 @@
       (is (= (thm :a :not-found) 1))
       (is (= (thm :x) nil))
       (is (= (thm :x :not-found) :not-found)))))
+
+(deftest cljs-2460
+  (is (= "[:a 1]" (pr-str (->MapEntry :a 1 nil))))
+  (binding [*print-length* 1]
+    (is (= "[:a ...]" (pr-str (->MapEntry :a 1 nil))))))
