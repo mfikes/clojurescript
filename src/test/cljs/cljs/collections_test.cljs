@@ -373,6 +373,10 @@
       2 [:x 0 1]
       3 [:x 0 1 2])))
 
+(deftest test-flatten
+  (is (= (flatten [[] []]) []))
+  (is (= (flatten [[1] []]) [1])))
+
 (deftest test-split-at
   (is (vector? (split-at 2 [])))
   (is (vector? (split-at 2 [1 2 3])))

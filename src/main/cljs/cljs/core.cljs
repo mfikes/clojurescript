@@ -5122,6 +5122,78 @@ reduces them without incurring seq initialization"
   ([pred coll]
      (filter (complement pred) coll)))
 
+(deftype TreeSeq [meta f prev-seed ^:mutable seed ^:mutable next]
+  Object
+  (seedval [coll]
+    (when (identical? UNREALIZED-SEED seed)
+      (set! seed (f prev-seed)))
+    seed)
+  (toString [coll]
+    (pr-str* coll))
+
+  IPending
+  (-realized? [coll]
+    (not (identical? seed UNREALIZED-SEED)))
+
+  IWithMeta
+  (-with-meta [coll meta] (TreeSeq. meta f prev-seed seed next))
+
+  IMeta
+  (-meta [coll] meta)
+
+  ISeq
+  (-first [coll]
+    (aget (.seedval coll) 0))
+  (-rest [coll]
+    (when (nil? next)
+      (set! next (if-some [s (.seedval coll)]
+                   (TreeSeq. nil f s UNREALIZED-SEED nil)
+                   ())))
+    next)
+
+  INext
+  (-next [coll]
+    (let [x (-rest coll)]
+      (if (empty? x)
+        nil
+        x)))
+
+  ICollection
+  (-conj [coll o] (cons o coll))
+
+  IEmptyableCollection
+  (-empty [coll] (-with-meta (.-EMPTY List) meta))
+
+  ISequential
+  ISeqable
+  (-seq [coll]
+    (if (.seedval coll) coll nil))
+
+  IEquiv
+  (-equiv [coll other] (equiv-sequential coll other))
+
+  IReduce
+  (-reduce [coll rf]
+    (if-some [s (.seedval coll)]
+      (if-some [s' (f s)]
+        (loop [ret (rf (aget s 0) (aget s' 0)) s s']
+          (if (reduced? ret)
+            @ret
+            (if-some [s (f s)]
+              (recur (rf ret (aget s 0)) s)
+              ret)))
+        (aget s 0))
+      (rf)))
+  (-reduce [coll rf start]
+    (if-some [s (.seedval coll)]
+      (loop [ret (rf start (aget s 0)) s s]
+        (if (reduced? ret)
+          @ret
+          (if-some [s (f s)]
+            (recur (rf ret (aget s 0)) s)
+            ret)))
+      start)))
+
 (defn tree-seq
   "Returns a lazy sequence of the nodes in a tree, via a depth-first walk.
   branch? must be a fn of one arg that returns true if passed a node
@@ -5129,13 +5201,18 @@ reduces them without incurring seq initialization"
   arg that returns a sequence of the children. Will only be called on
   nodes for which branch? returns true. Root is the root node of the
   tree."
-   [branch? children root]
-   (let [walk (fn walk [node]
-                (lazy-seq
-                 (cons node
-                  (when (branch? node)
-                    (mapcat walk (children node))))))]
-     (walk root)))
+  [branch? children root]
+  (TreeSeq. nil
+    (fn [[node pair]]
+      (when-some [[[node' & r] cont] (if (branch? node)
+                                           (if-some [cs (not-empty (children node))]
+                                             #js [cs pair]
+                                             pair)
+                                           pair)]
+        (if (some? r)
+          #js [node' #js [r cont]]
+          #js [node' cont])))
+    nil #js [root nil] nil))
 
 (defn flatten
   "Takes any nested combination of sequential things (lists, vectors,
@@ -10204,6 +10281,9 @@ reduces them without incurring seq initialization"
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
   Iterate
+  (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
+
+  TreeSeq
   (-pr-writer [coll writer opts] (pr-sequential-writer writer pr-writer "(" " " ")" opts coll))
 
   ES6IteratorSeq

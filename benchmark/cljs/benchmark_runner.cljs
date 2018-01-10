@@ -448,4 +448,12 @@
 (simple-benchmark [] (into [] (take 1000) (iterate inc 0)) 1000)
 (simple-benchmark [] (reduce + (take 64 (iterate inc 0))) 10000)
 (simple-benchmark [] (transduce (take 64) + (iterate inc 0)) 10000)
+
+(println "\n")
+(println ";; tree-seq")
+(defn nth' [coll n]
+  (transduce (drop n) (completing #(reduced %2)) nil coll))
+(simple-benchmark [] (into [] (tree-seq seq? identity '((1 2 (3)) (4)))) 1e6)
+(simple-benchmark [] (nth' (tree-seq seq? identity (repeat 10 (repeat 100 [1 2 (repeat 100 3)]))) 1000) 10000)
+
 (println)
