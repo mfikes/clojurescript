@@ -1625,6 +1625,17 @@ reduces them without incurring seq initialization"
         (aget arr i)
         not-found)))
 
+  IChunkedSeq
+  (-chunked-first [x] x)
+  (-chunked-rest [x] ())
+  IChunkedNext
+  (-chunked-next [x] nil)
+  IChunk
+  (-drop-first [coll]
+    (if-some [n (-next coll)]
+      n
+      (throw (js/Error. "-drop-first of empty chunk"))))
+
   ISequential
   IEquiv
   (-equiv [coll other] (equiv-sequential coll other))
