@@ -67,6 +67,17 @@
   "The namespace of the constants table as a symbol."
   'cljs.core.constants)
 
+(defn- polling-ns-resolve
+  "Repeatedly calls ns-resolve until the var returned is non-nil and bound,
+  waiting between calls by supplied delay."
+  [ns sym delay]
+  (let [var (ns-resolve ns sym)]
+    (if (and var (bound? var))
+      var
+      (do
+        (Thread/sleep delay)
+        (recur ns sym delay)))))
+
 #?(:clj
    (def transit-read-opts
      (try
@@ -3878,8 +3889,8 @@
    (defn- get-spec-vars
      []
      (when-let [spec-ns (find-ns 'cljs.spec.alpha)]
-       {:registry-ref (ns-resolve spec-ns 'registry-ref)
-        :speced-vars  (ns-resolve spec-ns '_speced_vars)}))
+       {:registry-ref (polling-ns-resolve spec-ns 'registry-ref 10)
+        :speced-vars  (polling-ns-resolve spec-ns '_speced_vars 10)}))
    :cljs
    (let [registry-ref (delay (get (ns-interns* 'cljs.spec.alpha$macros) 'registry-ref))
          ;; Here, we look up the symbol '-speced-vars because ns-interns*
