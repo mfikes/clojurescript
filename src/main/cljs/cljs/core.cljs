@@ -6584,7 +6584,7 @@ reduces them without incurring seq initialization"
   (-conj [node o] [key val o])
 
   IEmptyableCollection
-  (-empty [node] [])
+  (-empty [node] nil)
 
   ISequential
   ISeqable

@@ -55,7 +55,7 @@
 
     (testing "IEmptyableCollection"
       (testing "-empty"
-        (is (= [] (empty e)))))
+        (is (= (if (map-entry? e) nil []) (empty e)))))
 
     (testing "ISequential"
       (is (satisfies? ISequential e)))
