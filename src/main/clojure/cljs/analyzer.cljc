@@ -343,7 +343,7 @@
 
 (defmethod error-message :fn-deprecated
   [warning-type info]
-  (str (-> info :fexpr :info :name) " is deprecated."))
+  (str (-> info :fexpr :info :name) " is deprecated"))
 
 (defmethod error-message :undeclared-ns-form
   [warning-type info]
@@ -410,7 +410,7 @@
 
 (defmethod error-message :invalid-arithmetic
   [warning-type info]
-  (str (:js-op info) ", all arguments must be numbers, got " (:types info) " instead."))
+  (str (:js-op info) ", all arguments must be numbers, got " (:types info) " instead"))
 
 (defmethod error-message :invalid-array-access
   [warning-type {:keys [name types]}]
