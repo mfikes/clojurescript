@@ -654,7 +654,13 @@
                 (js/Date. 2015 2 8 19 13 00 999))))
     (is (=  1 (compare (js/Date. 2015 2 8 19 14 00 999)
                 (js/Date. 2015 2 8 19 13 00 999))))
-    ))
+
+    ;; CLJS-2479: Works with objects having valueOf function:
+    (let [x0 #js{:x 1, :valueOf #(-> 1)}
+          x1 #js{:x 2, :valueOf #(-> 2)}]
+      (is (= -1 (compare x0 x1)))
+      (is (= 1 (compare x1 x0)))
+      (is (= 0 (compare x1 x1))))))
 
 (deftest test-dot
   (let [s "abc"]
