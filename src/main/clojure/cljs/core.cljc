@@ -940,7 +940,7 @@
   (core/list 'js* "delete ~{}[~{}]" obj key))
 
 (core/defmacro js-in [key obj]
-  (core/list 'js* "~{} in ~{}" key obj))
+  (bool-expr (core/list 'js* "~{} in ~{}" key obj)))
 
 (core/defmacro js-debugger
   "Emit JavaScript \"debugger;\" statement"
