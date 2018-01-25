@@ -2415,7 +2415,8 @@ reduces them without incurring seq initialization"
    (-compare x y)
 
    :else
-   (if (and (or (string? x) (array? x) (true? x) (false? x))
+   (if (and (or (string? x) (array? x) (true? x) (false? x)
+                (and (js-in "valueOf" x) (js-in "valueOf" y)))
             (identical? (type x) (type y)))
      (garray/defaultCompare x y)
      (throw (js/Error. (str "Cannot compare " x " to " y))))))
