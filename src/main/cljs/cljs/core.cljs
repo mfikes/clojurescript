@@ -1777,7 +1777,11 @@ reduces them without incurring seq initialization"
 (defn empty
   "Returns an empty collection of the same category as coll, or nil"
   [coll]
-  (when-not (nil? coll)
+  (cond
+    (implements? IEmptyableCollection coll)
+    (-empty ^not-native coll)
+
+    (native-satisfies? IEmptyableCollection coll)
     (-empty coll)))
 
 (defn- accumulating-seq-count [coll]

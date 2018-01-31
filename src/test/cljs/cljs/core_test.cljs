@@ -1515,6 +1515,11 @@
 (deftest test-cljs-2457
   (is (thrown-with-msg? js/Error #".* is not ISeqable" (seq #js {:a 1 :b 2}))))
 
+(deftest test-cljs-2489
+  (is (nil? (empty nil)))
+  (is (= [] (empty [1 2 3])))
+  (is (nil? (empty "abc"))))
+
 (comment
   ;; ObjMap
   ;; (let [ks (map (partial str "foo") (range 500))
