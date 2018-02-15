@@ -1631,6 +1631,9 @@
   (is (thrown? js/Error (nth (repeat :x) -1)))
   (is (= ::not-found (nth (repeat :x) -1 ::not-found))))
 
+(deftest test-cljs-2527
+  (is (= (seq [1 2 3]) (iterator-seq (-iterator [1 2 3])))))
+
 (comment
   ;; ObjMap
   ;; (let [ks (map (partial str "foo") (range 500))
