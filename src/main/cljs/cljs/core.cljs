@@ -4123,6 +4123,14 @@ reduces them without incurring seq initialization"
               (recur (inc n)))
             (chunk-cons (array-chunk arr 0 n) (chunkIteratorSeq iter))))))))
 
+(defn iterator-seq
+  "Returns a seq on an iterator. Note that most collections
+  providing iterators support seq directly. Seqs cache values,
+  thus iterator-seq should not be used on any iterator that
+  repeatedly returns the same mutable object."
+  [iter]
+  (chunkIteratorSeq iter))
+
 (deftype TransformerIterator [^:mutable buffer ^:mutable _next ^:mutable completed ^:mutable xf sourceIter multi]
   Object
   (step [this]
