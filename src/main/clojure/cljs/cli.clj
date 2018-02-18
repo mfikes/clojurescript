@@ -371,7 +371,7 @@ present"
                                 :arg "name"
                                 :doc
                                 (str "The JavaScript target. Supported values: "
-                                     "nodejs, nashorn, webworker") }}
+                                     "nodejs, nashorn, webworker, none") }}
      :main
      {["-r" "--repl"]          {:fn repl-opt
                                 :doc "Run a repl"}
