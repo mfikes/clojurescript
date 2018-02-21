@@ -712,6 +712,45 @@
                            z)))))
               :tag meta :prefix))))
 
+(deftest test-cljs-1561
+  (are [form warnings]
+    (let [ws (atom [])]
+      (a/with-warning-handlers [(collecting-warning-handler ws)]
+        (a/analyze (assoc-in (a/empty-env) [:ns :name] 'cljs.user)
+          form))
+      (= @ws warnings))
+
+    '(defn f [^boolean b]
+       (loop [x b]
+         (if x
+           (recur 0)
+           :done)))
+    ["recur target parameter x has inferred type boolean, but being passed type number"]
+
+    '(loop [x 1 y true z :hi]
+       (when false (recur 'a "hi" nil)))
+    ["recur target parameter x has inferred type number, but being passed type cljs.core/Symbol"
+     "recur target parameter y has inferred type boolean, but being passed type string"]
+
+    '(loop [x 1 y true]
+       (when false (recur nil nil)))
+    ["recur target parameter x has inferred type number, but being passed type clj-nil"
+     "recur target parameter y has inferred type boolean, but being passed type clj-nil"]
+
+    '(loop [x 1]
+       (let [y (inc x)]
+         (when false (recur (inc y)))))
+    []
+
+    '(loop [b true]
+       (when false (recur (inc 1))))
+    ["recur target parameter b has inferred type boolean, but being passed type number"]
+
+    '(loop [x 1]
+       (inc x)
+       (when false (recur :hi)))
+    ["recur target parameter x has inferred type number, but being passed type cljs.core/Keyword"]))
+
 (deftest test-cljs-2023
   (let [form (with-meta 'js/goog.DEBUG {:tag 'boolean})]
     (is (= (-> (ana-api/analyze (a/empty-env) form) :tag) 'boolean))))

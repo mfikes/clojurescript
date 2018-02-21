@@ -141,6 +141,7 @@
    :invoke-ctor true
    :invalid-arithmetic true
    :invalid-array-access true
+   :recur-type-mismatch true
    :protocol-invalid-method true
    :protocol-duped-method true
    :protocol-multiple-impls true
@@ -432,6 +433,11 @@
       (when (or (= 'object (first types))
                 (every? #{'string} (butlast (rest types))))
         " (consider goog.object/set for object access)"))))
+
+(defmethod error-message :recur-type-mismatch
+  [warning-type info]
+  (str "recur target parameter " (:param-name info) " has inferred type " (:param-tag info)
+    ", but being passed type " (:expr-tag info)))
 
 (defmethod error-message :invoke-ctor
   [warning-type info]
@@ -1967,6 +1973,14 @@
   [op encl-env form _ _]
   (analyze-let encl-env form true))
 
+(defn- compatible? [param-tag expr-tag]
+  (or (= param-tag expr-tag)
+      (= '#{number js/Number} (into #{} [param-tag expr-tag]))
+      ('#{any js} expr-tag)
+      (and (set? expr-tag)
+           (or (expr-tag 'any)
+               (expr-tag 'js)))))
+
 (defmethod parse 'recur
   [op env [_ & exprs :as form] _ _]
   (let [context (:context env)
@@ -1981,6 +1995,14 @@
     (when-not (= (count exprs) (count (:params frame)))
       (throw (error env (str "recur argument count mismatch, expected: "
                           (count (:params frame)) " args, got: " (count exprs)))))
+    (doseq [[expr param] (map vector exprs (:params frame))]
+      (when-let [param-tag ('#{boolean number} (:tag param))]
+        (let [expr-tag (:tag expr)]
+          (when-not (compatible? param-tag expr-tag)
+            (warning :recur-type-mismatch env
+              {:expr-tag   expr-tag
+               :param-tag  param-tag
+               :param-name (:name param)})))))
     (when (and (:protocol-impl frame)
                (not add-implicit-target-object?))
       (warning :protocol-impl-recur-with-target env {:form (:form (first exprs))}))
