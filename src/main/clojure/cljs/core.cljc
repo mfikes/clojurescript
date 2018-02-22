@@ -2165,16 +2165,16 @@
   [bindings & body]
   (core/let [names (take-nth 2 bindings)
              vals (take-nth 2 (drop 1 bindings))
-             tempnames (map (comp gensym name) names)
-             binds (map core/vector names vals)
-             resets (reverse (map core/vector names tempnames))
-             bind-value (core/fn [[k v]] (core/list 'set! k v))]
-    `(let [~@(interleave tempnames names)]
-       ~@(map bind-value binds)
+             orig-vals-sym (gensym "orig-vals__")
+             temp-vals-sym (gensym "temp-vals__")
+             set-val (core/fn [vals-sym n k] `(set! ~k (~vals-sym ~n)))]
+    `(let [~orig-vals-sym [~@names]
+           ~temp-vals-sym [~@vals]]
+       ~@(map-indexed (partial set-val temp-vals-sym) names)
        (try
          ~@body
          (finally
-           ~@(map bind-value resets))))))
+           ~@(reverse (map-indexed (partial set-val orig-vals-sym) names)))))))
 
 (core/defmacro binding
   "binding => var-symbol init-expr
