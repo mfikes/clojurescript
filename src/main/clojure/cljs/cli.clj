@@ -10,6 +10,7 @@
   (:require [clojure.java.io :as io]
             [clojure.string :as string]
             [clojure.edn :as edn]
+            [clojure.spec.alpha :as s]
             [cljs.util :as util]
             [cljs.env :as env]
             [cljs.analyzer :as ana]
@@ -157,6 +158,8 @@ classpath. Classpath-relative paths have prefix of @ or @/")
           {:cljs.main/error :invalid-arg}))))
   (assoc-in cfg [:options :watch] path))
 
+(s/def ::optmizations #{"none" "whitespace" "simple" "advanced"})
+
 (defn- optimize-opt
   [cfg level]
   (assoc-in cfg [:options :optimizations] (keyword level)))
@@ -164,6 +167,8 @@ classpath. Classpath-relative paths have prefix of @ or @/")
 (defn- output-to-opt
   [cfg path]
   (assoc-in cfg [:options :output-to] path))
+
+(s/def ::target #{"browser" "nodejs" "nashorn" "webworker" "none"})
 
 (defn- target-opt
   [cfg target]
@@ -411,13 +416,21 @@ present"
   ([commands]
     (add-commands {:main-dispatch nil :init-dispatch nil} commands))
   ([commands {:keys [groups main init]}]
-   (letfn [(merge-dispatch [st k options]
+   (letfn [(maybe-wrap-fn [{:keys [fn spec arg]}]
+             (if spec
+               (clojure.core/fn [cfg value]
+                 (if (s/valid? spec value)
+                   (fn cfg value)
+                   (throw (ex-info (str "Invalid " arg ": "
+                                     (s/explain-str spec value)) {}))))
+               fn))
+           (merge-dispatch [st k options]
              (update-in st [k]
                (fn [m]
                  (reduce
                    (fn [ret [cs csm]]
                      (merge ret
-                       (zipmap cs (repeat (:fn csm)))))
+                       (zipmap cs (repeat (maybe-wrap-fn csm)))))
                    m options))))]
      (-> commands
        (update-in [:groups] merge groups)
@@ -460,12 +473,14 @@ present"
                                 :arg "file"
                                 :doc "Set the output compiled file"}
       ["-O" "--optimizations"] {:group ::compile :fn optimize-opt
+                                :spec ::optmizations
                                 :arg "level"
                                 :doc
                                 (str "Set optimization level, only effective with "
                                   "-c main option. Valid values are: none, "
                                   "whitespace, simple, advanced")}
       ["-t" "--target"]        {:group ::main&compile :fn target-opt
+                                :spec ::target
                                 :arg "name"
                                 :doc
                                 (str "The JavaScript target. Configures environment bootstrap and "
