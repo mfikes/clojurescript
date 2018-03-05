@@ -48,6 +48,7 @@
 ;; Compiler dynamic vars
 (def ^:dynamic *cljs-ns* 'cljs.user)
 (def ^:dynamic *cljs-file* nil)
+(def ^:dynamic *origin-file* nil)
 (def ^:dynamic *checked-arrays* false)
 (def ^:dynamic *check-alias-dupes* true)
 (def ^:dynamic *cljs-static-fns* false)
@@ -679,12 +680,20 @@
      (:root-source-info env)
      (merge (select-keys env [:root-source-info])))))
 
+(defn current-src-file []
+  (when-let [file (or *origin-file* *cljs-file*)]
+    #?(:clj  (cond-> file
+               (and (instance? URL file)
+                    (= "file" (.getProtocol ^URL file)))
+               io/file)
+       :cljs file)))
+
 (defn message [env s]
   (str s
     (if (:line env)
-      (str " at line " (:line env) " " *cljs-file*)
+      (str " at line " (:line env) " " (current-src-file))
       (when *cljs-file*
-        (str " in file " *cljs-file*)))))
+        (str " in file " (current-src-file))))))
 
 (defn warning [warning-type env extra]
   (doseq [handler *cljs-warning-handlers*]
@@ -3749,6 +3758,7 @@
                                          (atom @env/*compiler*))
                         *cljs-ns* 'cljs.user
                         *cljs-file* src
+                        *origin-file* (:origin-file opts)
                         *macro-infer*
                         (or (when (contains? opts :macro-infer)
                               (:macro-infer opts))
@@ -4052,6 +4062,7 @@
                          *unchecked-arrays* false])
                *cljs-ns* 'cljs.user
                *cljs-file* nil
+               *origin-file* nil
                reader/*alias-map* (or reader/*alias-map* {})]
        (loop [ns nil forms forms]
          (if (some? forms)
@@ -4108,6 +4119,7 @@
                 (if (or skip-cache (not cache) (requires-analysis? res cache output-dir opts))
                   (binding [*cljs-ns* 'cljs.user
                             *cljs-file* path
+                            *origin-file* (:origin-file opts)
                             reader/*alias-map* (or reader/*alias-map* {})]
                     (when (or *verbose* (:verbose opts))
                       (util/debug-prn "Analyzing" (str res)))

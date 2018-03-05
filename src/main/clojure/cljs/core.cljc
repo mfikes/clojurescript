@@ -2219,13 +2219,13 @@
                   test "'"
                   (core/when (:line env)
                     (core/str " on line " (:line env) " "
-                      cljs.analyzer/*cljs-file*))))
+                      (cljs.analyzer/current-src-file)))))
          :cljs (js/Error.
                  (core/str "Duplicate case test constant '"
                    test "'"
                    (core/when (:line env)
                      (core/str " on line " (:line env) " "
-                       cljs.analyzer/*cljs-file*))))))
+                       (cljs.analyzer/current-src-file)))))))
     (assoc m test expr)))
 
 (core/defn- const? [env x]

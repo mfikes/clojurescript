@@ -1367,6 +1367,7 @@
        (binding [*out*                 out
                  ana/*cljs-ns*         'cljs.user
                  ana/*cljs-file*       (.getPath ^File src)
+                 ana/*origin-file*     (:origin-file opts)
                  reader/*alias-map*    (or reader/*alias-map* {})
                  ana/*checked-arrays*  (or ana/*checked-arrays* (:checked-arrays opts))
                  ana/*cljs-static-fns* (or ana/*cljs-static-fns* (:static-fns opts))

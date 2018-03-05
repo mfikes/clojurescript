@@ -557,7 +557,8 @@
       (let [out-file (io/file (util/output-directory opts) output-file)]
         (compiled-file (comp/compile-file file out-file opts)))
       (let [path (.getPath ^File file)]
-        (binding [ana/*cljs-file* path]
+        (binding [ana/*cljs-file* path
+                  ana/*origin-file* (:origin-file opts)]
           (with-open [rdr (io/reader file)]
             (compile-form-seq (ana/forms-seq* rdr path)))))))
 
@@ -635,7 +636,7 @@
   (-compile [this opts]
     (if (.isDirectory this)
       (compile-dir this opts)
-      (compile-file this opts)))
+      (compile-file this (merge {:origin-file this} opts))))
   (-find-sources [this _]
     (if (.isDirectory this)
       (comp/find-root-sources this)
@@ -644,8 +645,8 @@
   URL
   (-compile [this opts]
     (case (.getProtocol this)
-      "file" (-compile (io/file this) opts)
-      "jar" (compile-from-jar this opts)))
+      "file" (-compile (io/file this) (merge {:origin-file this} opts))
+      "jar" (compile-from-jar this (merge {:origin-file this} opts))))
   (-find-sources [this opts]
     (case (.getProtocol this)
       "file" (-find-sources (io/file this) opts)
@@ -658,7 +659,7 @@
     [(ana/parse-ns [this] opts)])
 
   String
-  (-compile [this opts] (-compile (io/file this) opts))
+  (-compile [this opts] (-compile (io/file this) (merge {:origin-file this} opts)))
   (-find-sources [this opts] (-find-sources (io/file this) opts))
 
   clojure.lang.PersistentVector
