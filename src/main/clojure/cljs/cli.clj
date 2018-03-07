@@ -275,13 +275,18 @@ is trying load some arbitrary ns."
     (util/mkdirs f)
     (util/path f)))
 
+(defn- maybe-use-temp-out-dir [options]
+  (cond-> options
+    (and (not (:output-dir options))
+         (not (.exists (io/file "index.html"))))
+    (assoc :output-dir (temp-out-dir)
+           :temp-output-dir? true)))
+
 (defn- repl-opt
   "Start a repl with args and inits. Print greeting if no eval options were
 present"
   [repl-env [_ & args] {:keys [repl-env-options options inits] :as cfg}]
-  (let [opts   (cond-> options
-                 (not (:output-dir options))
-                 (assoc :output-dir (temp-out-dir) :temp-output-dir? true)
+  (let [opts   (cond-> (maybe-use-temp-out-dir options)
                  (not (contains? options :aot-cache))
                  (assoc :aot-cache true))
         reopts (merge repl-env-options (select-keys opts [:output-to :output-dir]))
@@ -299,9 +304,7 @@ present"
 
 (defn default-main
   [repl-env {:keys [main script args repl-env-options options inits] :as cfg}]
-  (let [opts   (cond-> options
-                 (not (:output-dir options))
-                 (assoc :output-dir (temp-out-dir) :temp-output-dir? true)
+  (let [opts   (cond-> (maybe-use-temp-out-dir options)
                  (not (contains? options :aot-cache))
                  (assoc :aot-cache true))
         reopts (merge repl-env-options

@@ -102,7 +102,7 @@
          "</body></html>")
     "text/html"))
 
-(defn default-index [output-to]
+(defn default-index [output-to output-dir]
   (str
     "<!DOCTYPE html><html>"
     "<head>"
@@ -132,12 +132,13 @@
     "    &lt;meta charset=\"UTF-8\"&gt;\n"
     "  &lt;/head&gt;\n"
     "  &lt;body&gt;\n"
-    "    &lt;script src=\"" output-to "\" type=\"text/javascript\"&gt;&lt;/script&gt;\n"
+    "    &lt;script src=\"" (or output-to (str (or output-dir "out") "/main.js"))
+    "\" type=\"text/javascript\"&gt;&lt;/script&gt;\n"
     "  &lt;/body&gt;\n"
     "&lt;/html&gt;\n"
     "</pre>"
     "</div></div>"
-    "<script src=\"" output-to "\"></script>"
+    "<script src=\"" (or output-to (str output-dir "/main.js")) "\"></script>"
     "</body></html>"))
 
 (defn send-static
@@ -174,7 +175,7 @@
           ;; "/index.html" doesn't exist, provide our own
           (= path "/index.html")
           (server/send-and-close conn 200
-            (default-index (or output-to (str output-dir "/main.js")))
+            (default-index output-to output-dir)
             "text/html" "UTF-8")
           (= path (cond->> "/main.js" output-dir (str "/" output-dir )))
           (let [closure-defines (-> `{"goog.json.USE_NATIVE_JSON" true
