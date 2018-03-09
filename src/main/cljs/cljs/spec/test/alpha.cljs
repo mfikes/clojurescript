@@ -116,7 +116,9 @@
                                 (with-instrument-disabled
                                   (when (:args fn-spec) (conform! v :args (:args fn-spec) args args))
                                   (binding [*instrument-enabled* true]
-                                    (apply f args)))
+                                    (if-some [variadic (.-cljs$core$IFn$_invoke$arity$variadic f)]
+                                      (variadic args)
+                                      (apply f args))))
                                 (apply f args))) nil)))))
 
 (defn- no-fspec

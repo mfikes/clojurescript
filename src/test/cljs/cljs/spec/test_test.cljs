@@ -73,3 +73,14 @@
   (is (arities 1))
   (is (thrown? js/Error (arities "bad")))
   (stest/unstrument `arities))
+
+(defn variadic [& args] 0)
+
+(s/fdef variadic
+  :args (s/cat :args (s/* int?)))
+
+(deftests test-2641
+  (stest/instrument `variadic)
+  (is (== 0 (variadic 1 2 3)))
+  (is (thrown? js/Error (variadic 1 2 :hi)))
+  (stest/unstrument `variadic))
