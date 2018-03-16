@@ -399,3 +399,14 @@
                  (or (.endsWith path ".json")
                      (.endsWith path ".js"))))
        fseq))))
+
+(defn non-public-field-value
+  "Accesses a non public field, returning its value. The 2-arity version
+  access a static field on a class, while the 3-arity version accesses a field
+  on an instance."
+  ([class name]
+   (non-public-field-value class name nil))
+  ([class name object]
+   (let [field (.getDeclaredField class name)]
+     (.setAccessible field true)
+     (.get field object))))

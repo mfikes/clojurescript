@@ -36,6 +36,7 @@
               CompilerOptions$LanguageMode SourceMap$Format
               SourceMap$DetailLevel ClosureCodingConvention SourceFile
               Result JSError CheckLevel DiagnosticGroups
+              DiagnosticGroup DiagnosticType CollapseProperties
               CommandLineRunner AnonymousFunctionNamingPolicy
               JSModule SourceMap Es6RewriteModules VariableMap
               ProcessCommonJSModules Es6RewriteScriptsToModules]
@@ -181,6 +182,12 @@
     :ecmascript-2017       CompilerOptions$LanguageMode/ECMASCRIPT_2017
     :ecmascript-next       CompilerOptions$LanguageMode/ECMASCRIPT_NEXT))
 
+(defn set-diagnostic-type-warning-level
+  "Set warning level for a given DiagnosticType."
+  [^CompilerOptions compiler-options ^DiagnosticType diagnostic-type level]
+  (.setWarningLevel compiler-options
+    (DiagnosticGroup/forType diagnostic-type) (level check-level)))
+
 (defn set-options
   "TODO: Add any other options that we would like to support."
   [opts ^CompilerOptions compiler-options]
@@ -215,6 +222,8 @@
     (doseq [[type level] (:closure-warnings opts)]
       (. compiler-options
         (setWarningLevel (type warning-types) (level check-level)))))
+
+  (set-diagnostic-type-warning-level compiler-options (util/non-public-field-value CollapseProperties "UNSAFE_THIS") :off)
 
   (when (contains? opts :closure-extra-annotations)
     (. compiler-options
