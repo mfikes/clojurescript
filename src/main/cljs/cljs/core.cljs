@@ -5405,14 +5405,14 @@ reduces them without incurring seq initialization"
     (unchecked-array-for pv i)
     (vector-index-out-of-bounds i (.-cnt pv))))
 
-(defn- do-assoc [pv level node i val]
+(defn- do-assoc [level node i val]
   (let [ret (pv-clone-node node)]
     (if (zero? level)
       (do
         (pv-aset ret (bit-and i 0x01f) val)
         ret)
       (let [subidx (bit-and (bit-shift-right-zero-fill i level) 0x01f)]
-        (pv-aset ret subidx (do-assoc pv (- level 5) (pv-aget node subidx) i val))
+        (pv-aset ret subidx (do-assoc (- level 5) (pv-aget node subidx) i val))
         ret))))
 
 (defn- pop-tail [pv level node]
@@ -5606,7 +5606,7 @@ reduces them without incurring seq initialization"
          (let [new-tail (aclone tail)]
            (aset new-tail (bit-and n 0x01f) val)
            (PersistentVector. meta cnt shift root new-tail nil))
-         (PersistentVector. meta cnt shift (do-assoc coll shift root n val) tail nil))
+         (PersistentVector. meta cnt shift (do-assoc shift root n val) tail nil))
        (== n cnt) (-conj coll val)
        :else (throw (js/Error. (str "Index " n " out of bounds  [0," cnt "]")))))
 
