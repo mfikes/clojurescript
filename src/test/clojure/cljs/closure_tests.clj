@@ -18,7 +18,7 @@
             [cljs.test-util :as test]
             [clojure.java.io :as io]
             [clojure.string :as string])
-  (:import [java.io File]
+  (:import [java.io File IOException]
            [com.google.javascript.jscomp JSModule]))
 
 (deftest test-make-preamble
@@ -412,36 +412,43 @@
     (test/delete-out-files out)))
 
 (deftest test-cljs-2580
-  (spit (io/file "package.json") "{}")
-  (let [opts {:npm-deps {"pg" "7.4.1"
-                         "pg-native" "2.2.0"}
-              :target :nodejs}
-        out (util/output-directory opts)]
-    (test/delete-node-modules)
-    (test/delete-out-files out)
-    (closure/maybe-install-node-deps! opts)
-    (let [modules (closure/index-node-modules-dir)]
-      (is (true? (some (fn [module]
-                         (= module
-                           {:file (.getAbsolutePath (io/file "node_modules/pg/lib/index.js"))
-                            :module-type :es6
-                            :provides ["pg/lib/index.js"
-                                       "pg/lib/index"
-                                       "pg"
-                                       "pg/lib"]}))
-                   modules))))
-    (let [modules (closure/index-node-modules ["pg"] opts)]
-      (is (true? (some (fn [module]
-                         (= module {:module-type :es6
-                                    :file (.getAbsolutePath (io/file "node_modules/pg/lib/index.js"))
-                                    :provides ["pg"
-                                               "pg/lib/index.js"
-                                               "pg/lib/index"
-                                               "pg/lib"]}))
-                   modules))))
-    (.delete (io/file "package.json"))
-    (test/delete-node-modules)
-    (test/delete-out-files out)))
+  (let [pg-config-available? (try
+                               (zero? (:exit (sh/sh "pg_config")))
+                               (catch IOException _
+                                 false))]
+    (if pg-config-available?
+      (do
+        (spit (io/file "package.json") "{}")
+        (let [opts {:npm-deps {"pg"        "7.4.1"
+                               "pg-native" "2.2.0"}
+                    :target   :nodejs}
+              out  (util/output-directory opts)]
+          (test/delete-node-modules)
+          (test/delete-out-files out)
+          (closure/maybe-install-node-deps! opts)
+          (let [modules (closure/index-node-modules-dir)]
+            (is (true? (some (fn [module]
+                               (= module
+                                 {:file        (.getAbsolutePath (io/file "node_modules/pg/lib/index.js"))
+                                  :module-type :es6
+                                  :provides    ["pg/lib/index.js"
+                                                "pg/lib/index"
+                                                "pg"
+                                                "pg/lib"]}))
+                         modules))))
+          (let [modules (closure/index-node-modules ["pg"] opts)]
+            (is (true? (some (fn [module]
+                               (= module {:module-type :es6
+                                          :file        (.getAbsolutePath (io/file "node_modules/pg/lib/index.js"))
+                                          :provides    ["pg"
+                                                        "pg/lib/index.js"
+                                                        "pg/lib/index"
+                                                        "pg/lib"]}))
+                         modules))))
+          (.delete (io/file "package.json"))
+          (test/delete-node-modules)
+          (test/delete-out-files out)))
+      (println "Skipping test-cljs-2580 because Postgres is not installed (pg_config not available)."))))
 
 (deftest test-cljs-2592
   (spit (io/file "package.json") "{}")
