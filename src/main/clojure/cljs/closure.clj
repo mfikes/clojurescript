@@ -1556,10 +1556,24 @@
       (last input-path) ;; same file
       (util/to-path (concat prefix (drop common input-path)) "/"))))
 
+(defn add-provide-paths [js-modules opts]
+  (assoc opts
+    ::module-paths (into {} (mapcat (fn [js-module]
+                                      (map (fn [provide]
+                                             [provide (:file js-module)])
+                                        (:provides js-module)))
+                              js-modules))))
+
+(defn module-path [module opts]
+  (util/debug-prn module '->)
+  (when-let [file (get-in opts [::module-paths module])]
+    (util/debug-prn file)
+    (ModuleNames/fileToModuleName (string/replace file "\\" "/"))))
+
 (defn add-dep-string
   "Return a goog.addDependency string for an input."
   [opts input]
-  (letfn [(ns-list [coll] (when (seq coll) (apply str (interpose ", " (map #(str "'" (comp/munge %) "'") coll)))))]
+  (letfn [(ns-list [coll] (when (seq coll) (apply str (interpose ", " (map #(str "'" (or (module-path % opts) (comp/munge %)) "'") coll)))))]
     (str "goog.addDependency(\""
          (path-relative-to
            (io/file (util/output-directory opts) "goog" "base.js") input)
@@ -1846,7 +1860,9 @@
              (map (fn [i]
                     (if (string? i)
                       i
-                      (.getSymbol i))))
+                      (let [module (.getRawText i)]
+                        (or (module-path module opts)
+                            module)))))
              ;; If CJS/ES6 module uses goog.require, goog is added to requires
              ;; but this would cause problems with Cljs.
              (remove #{"goog"})
@@ -2642,6 +2658,7 @@
                                       (some? (:file-min js))
                                       (update-in [:file-min] to-absolute-path)))))
                            js-modules)
+              opts (add-provide-paths js-modules opts)
               js-modules (convert-js-modules js-modules opts)]
           ;; Write modules to disk, update compiler state and build new options
           (reduce (fn [new-opts {:keys [file module-type] :as ijs}]
