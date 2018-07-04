@@ -2121,11 +2121,15 @@ reduces them without incurring seq initialization"
           (recur ret (first ks) (next ks))
           ret)))))
 
-(defn empty?
-  "Returns true if coll has no items - same as (not (seq coll)).
+(defn  empty?
+  "Returns true if coll has no items - same as (not (seq coll))
+  for seqable? collections. Also supported on transients.
   Please use the idiom (seq x) rather than (not (empty? x))"
-  [coll] (or (nil? coll)
-             (not (seq coll))))
+  [coll]
+  (cond
+    (nil? coll) true
+    (implements? ITransientCollection coll) (zero? (count coll))
+    :else (not (seq coll))))
 
 (defn coll?
   "Returns true if x satisfies ICollection"
