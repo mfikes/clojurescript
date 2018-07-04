@@ -2124,10 +2124,14 @@ reduces them without incurring seq initialization"
           ret)))))
 
 (defn ^boolean empty?
-  "Returns true if coll has no items - same as (not (seq coll)).
+  "Returns true if coll has no items - same as (not (seq coll))
+  for seqable? collections. Also supported on transients.
   Please use the idiom (seq x) rather than (not (empty? x))"
-  [coll] (or (nil? coll)
-             (not (seq coll))))
+  [coll]
+  (cond
+    (nil? coll) true
+    (implements? ITransientCollection coll) (zero? (count coll))
+    :else (not (seq coll))))
 
 (defn ^boolean coll?
   "Returns true if x satisfies ICollection"
