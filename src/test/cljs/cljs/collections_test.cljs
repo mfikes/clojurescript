@@ -1032,6 +1032,21 @@
     (persistent! t)
     (is (= :fail (try (get t :a :not-found) (catch js/Error e :fail))))))
 
+(defn test-empty?-on-transient [coll]
+  {:pre [(empty? coll)]}
+  (let [tcoll (transient coll)
+        _     (is (empty? tcoll))
+        tcoll (conj! tcoll [1 2])
+        _     (is (not (empty? tcoll)))
+        _     (persistent! tcoll)
+        _     (is (thrown? js/Error (empty? tcoll)))]))
+
+(deftest test-cljs-2802
+  (test-empty?-on-transient [])
+  (test-empty?-on-transient #{})
+  (test-empty?-on-transient (array-map))
+  (test-empty?-on-transient (hash-map)))
+
 (comment
 
   (run-tests)
