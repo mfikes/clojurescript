@@ -1506,7 +1506,7 @@ reduces them without incurring seq initialization"
                (recur nval (inc n))))
            val)))))
 
-(declare hash-coll cons drop count nth RSeq List)
+(declare cons drop count nth RSeq List)
 
 (defn counted?
   "Returns true if coll implements count in constant time"
@@ -2984,34 +2984,7 @@ reduces them without incurring seq initialization"
             (= (first xs) (first ys)) (recur (next xs) (next ys))
             :else false))))))
 
-(defn- hash-coll [coll]
-  (if (seq coll)
-    (loop [res (hash (first coll)) s (next coll)]
-      (if (nil? s)
-        res
-        (recur (hash-combine res (hash (first s))) (next s))))
-    0))
-
 (declare key val)
-
-(defn- hash-imap [m]
-  ;; a la clojure.lang.APersistentMap
-  (loop [h 0 s (seq m)]
-    (if s
-      (let [e (first s)]
-        (recur (js-mod (+ h (bit-xor (hash (key e)) (hash (val e))))
-                    4503599627370496)
-               (next s)))
-      h)))
-
-(defn- hash-iset [s]
-  ;; a la clojure.lang.APersistentSet
-  (loop [h 0 s (seq s)]
-    (if s
-      (let [e (first s)]
-        (recur (js-mod (+ h (hash e)) 4503599627370496)
-               (next s)))
-      h)))
 
 (declare name chunk-first chunk-rest)
 
