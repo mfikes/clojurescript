@@ -247,7 +247,6 @@
     (if (< i 1000)
       (recur (inc i) (conj r (str "foo" i)))
       r)))
-(simple-benchmark [coll hash-coll-test] (hash-coll coll) 100)
 (simple-benchmark [coll hash-coll-test] (hash-ordered-coll coll) 100)
 (def hash-imap-test
   (loop [i 0 r {}]
@@ -259,7 +258,6 @@
     (if (< i 1000)
       (recur (inc i) (conj r [i i]))
       r)))
-(simple-benchmark [coll hash-imap-test] (hash-imap coll) 100)
 (simple-benchmark [coll hash-imap-test] (hash-unordered-coll coll) 100)
 (simple-benchmark [coll pmap] (:f0 coll) 1000000)
 (simple-benchmark [coll pmap] (get coll :f0) 1000000)
