@@ -8,7 +8,8 @@
 
 (ns cljs.tagged-literals
   #?(:clj  (:require [clojure.instant :as inst])
-     :cljs (:require [cljs.reader :as reader])))
+     :cljs (:require [cljs.reader :as reader]))
+  #?(:clj (:import (java.io Serializable))))
 
 (defn read-queue
   [form]
@@ -67,7 +68,8 @@
       (and (keyword? k)
            (nil? (namespace k)))))
 
-(deftype JSValue [val])
+(deftype JSValue [val]
+  #?(:clj Serializable))
 
 (defn read-js
   [form]
