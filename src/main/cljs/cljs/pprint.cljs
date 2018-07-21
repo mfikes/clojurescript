@@ -52,7 +52,7 @@
 ;; cljs specific utils
 ;;======================================================================
 
-(defn ^boolean float?
+(defn float?
   "Returns true if n is an float."
   [n]
   (and (number? n)
