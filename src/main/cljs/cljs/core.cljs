@@ -1845,7 +1845,7 @@ reduces them without incurring seq initialization"
 (defn nth
   "Returns the value at the index. get returns nil if index out of
   bounds, nth throws an exception unless not-found is supplied.  nth
-  also works for strings, arrays, regex Matchers and Lists, and,
+  also works for strings and arrays, and,
   in O(n) time, for sequences."
   ([coll n]
     (cond
