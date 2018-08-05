@@ -476,3 +476,52 @@
     (.delete (io/file "package.json"))
     (test/delete-node-modules)
     (test/delete-out-files out)))
+
+(deftest non-implicitly-provided-global-exports
+  (let [lib {:file "libs",}
+        expanded [{:file "libs/other.js"
+                   :provides ["other"]}
+                  {:file "libs/mylib.js"
+                   :provides ["mylib"]}]]
+    (is (empty? (#'closure/non-implicitly-provided-global-exports lib expanded))))
+  (let [lib {:file "libs",
+             :global-exports '{mylib mylib-g}}
+        expanded [{:file "libs/other.js"
+                   :provides ["other"]}
+                  {:file "libs/mylib.js"
+                   :provides ["mylib"]
+                   :global-exports '{mylib mylib-g}}]]
+    (is (empty? (#'closure/non-implicitly-provided-global-exports lib expanded))))
+  (let [lib {:file "libs",
+              :global-exports '{mylib mylib-g
+                                other other-g}}
+        expanded [{:file "libs/other.js"
+                   :provides ["other"]
+                   :global-exports '{other other-g}}
+                  {:file "libs/mylib.js"
+                   :provides ["mylib"]
+                   :global-exports '{mylib mylib-g}}]]
+    (is (empty? (#'closure/non-implicitly-provided-global-exports lib expanded))))
+  (let [lib {:file "libs",
+             :global-exports '{mylib mylib-g
+                               other other-g
+                               missing missing-g}}
+        expanded [{:file "libs/other.js"
+                   :provides ["other"]
+                   :global-exports '{other other-g}}
+                  {:file "libs/mylib.js"
+                   :provides ["mylib"]
+                   :global-exports '{mylib mylib-g}}]]
+    (is (= '#{missing} (set (#'closure/non-implicitly-provided-global-exports lib expanded)))))
+  (let [lib {:file "libs",
+             :global-exports '{mylib mylib-g
+                               other other-g
+                               missing missing-g
+                               another another-g}}
+        expanded [{:file "libs/other.js"
+                   :provides ["other"]
+                   :global-exports '{other other-g}}
+                  {:file "libs/mylib.js"
+                   :provides ["mylib"]
+                   :global-exports '{mylib mylib-g}}]]
+    (is (= '#{another missing} (set (#'closure/non-implicitly-provided-global-exports lib expanded))))))
