@@ -2288,6 +2288,14 @@
   (and (satisfies? deps/IJavaScript js)
        (deps/-foreign? js)))
 
+(defn- non-implicitly-provided-global-exports
+  "Given a foreign library spec and its expansion, returns global exports that
+  are not included in the implicit :provides spec."
+  [lib expanded]
+  (into [] (set/difference
+             (set (keys (:global-exports lib)))
+             (set (keys (apply merge (map :global-exports expanded)))))))
+
 (defn expand-libs
   "EXPERIMENTAL. Given a set of libs expand any entries which only name
    directories into a sequence of lib entries for all JS files recursively
@@ -2308,17 +2316,25 @@
               (let [root (.getAbsolutePath (io/file file))
                     dir (io/file file)]
                 (if (.isDirectory dir)
-                  (into []
-                    (comp
-                      (filter #(.endsWith (.getName ^File %) ".js"))
-                      (filter #(not (.isHidden ^File %)))
-                      (map
-                        (fn [^File f]
-                          (let [p (.getPath f)
-                                ap (.getAbsolutePath f)]
-                            (merge lib
-                              {:file p :provides (path->provides (prep-path ap root))})))))
-                    (file-seq dir))
+                  (let [expanded (into []
+                                   (comp
+                                     (filter #(.endsWith (.getName ^File %) ".js"))
+                                     (filter #(not (.isHidden ^File %)))
+                                     (map
+                                       (fn [^File f]
+                                         (let [p        (.getPath f)
+                                               ap       (.getAbsolutePath f)
+                                               provides (path->provides (prep-path ap root))]
+                                           (merge lib
+                                             {:file p :provides provides}
+                                             (when-let [global-exports (:global-exports lib)]
+                                               {:global-exports (select-keys global-exports (map symbol provides))}))))))
+                                   (file-seq dir))]
+                    (when-let [not-provided (seq (non-implicitly-provided-global-exports lib expanded))]
+                      (throw (Exception. (str "Foreign lib global exports not implicitly provided. Files "
+                                           (pr-str (mapv #(.getPath (io/file file (str (name %) ".js"))) not-provided))
+                                           " not found for library spec " (pr-str lib)))))
+                    expanded)
                   [lib]))))]
     (into [] (mapcat expand-lib* libs))))
 
