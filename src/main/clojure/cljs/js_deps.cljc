@@ -238,12 +238,28 @@ case."
              false))
       (io/as-url (io/as-file path-or-url))))
 
+(defn- non-provided-global-exports
+  "Given a foreign library spec, returns global exports that are not included
+  in an explicitly supplied :provides spec. (If :provides missing, we assume
+  that :file indicates a directory of JavaScript files; a similar check will be
+  performed after expansion.)"
+  [{:keys [provides global-exports]}]
+  (keep (fn [global-export]
+          (when (and provides
+                     (not-any? #{(str global-export)} provides))
+            global-export))
+    (keys global-exports)))
+
 (defn load-foreign-library*
   "Given a library spec (a map containing the keys :file
   and :provides), returns a map containing :provides, :requires, :file
   and :url"
   ([lib-spec] (load-foreign-library* lib-spec false))
   ([lib-spec cp-only?]
+    (when-let [not-provided (seq (non-provided-global-exports lib-spec))]
+      (throw (Exception. (str "Foreign lib global exports not provided: "
+                           (pr-str (mapv str not-provided))
+                           " not found in :provides in " (pr-str lib-spec)))))
     (let [find-func (if cp-only? io/resource find-url)]
       (cond-> (assoc lib-spec :foreign true)
         (:file lib-spec)
