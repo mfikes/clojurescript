@@ -1199,21 +1199,30 @@
   [{:keys [target val env]}]
   (emit-wrap env (emits target " = " val)))
 
-(defn emit-global-export [ns-name global-exports lib]
-  (emitln (munge ns-name) "."
-          (ana/munge-global-export lib)
-          " = goog.global"
-          ;; Convert object dot access to bracket access
-          (->> (string/split (name (or (get global-exports (symbol lib))
-                                       (get global-exports (name lib))))
-                             #"\.")
-               (map (fn [prop]
-                      (str "[\"" prop "\"]")))
-               (apply str))
-          ";"))
+(defn emit-global-export [ns-name global-exports lib env]
+  (let [global-export-src (str (munge ns-name) "."
+                            (ana/munge-global-export lib)
+                            " = goog.global"
+                            ;; Convert object dot access to bracket access
+                            (->> (string/split (name (or (get global-exports (symbol lib))
+                                                         (get global-exports (name lib))))
+                                   #"\.")
+                              (map (fn [prop]
+                                     (str "[\"" prop "\"]")))
+                              (apply str))
+                            ";")]
+    (if (:repl-env env)
+      ;; Direct require forms of libs with global exports evaluated in the REPL
+      ;; will involve a potentially async load of the lib code (especially in
+      ;; browser REPLs), so we attempt to avoid initializing the global export
+      ;; prior to the lib load by simply waiting a bit (setting up a race that
+      ;; we hope to lose, while still being faster than any subsequent form
+      ;; might be entered in the REPL.)
+      (emitln "setTimeout(function () {" global-export-src "}, 100);")
+      (emitln global-export-src))))
 
 (defn load-libs
-  [libs seen reloads deps ns-name]
+  [libs seen reloads env deps ns-name]
   (let [{:keys [options js-dependency-index]} @env/*compiler*
         {:keys [target optimizations]} options
         loaded-libs (munge 'cljs.core.*loaded-libs*)
@@ -1270,14 +1279,14 @@
         " = require('" lib "');"))
     (doseq [lib global-exports-libs]
       (let [{:keys [global-exports]} (get js-dependency-index (name lib))]
-        (emit-global-export ns-name global-exports lib)))
+        (emit-global-export ns-name global-exports lib env)))
     (when (-> libs meta :reload-all)
       (emitln "if(!COMPILED) " loaded-libs " = cljs.core.into(" loaded-libs-temp ", " loaded-libs ");"))))
 
 (defmethod emit* :ns*
   [{:keys [name requires uses require-macros reloads env deps]}]
-  (load-libs requires nil (:require reloads) deps name)
-  (load-libs uses requires (:use reloads) deps name)
+  (load-libs requires nil (:require reloads) env deps name)
+  (load-libs uses requires (:use reloads) env deps name)
   (when (:repl-env env)
     (emitln "null;")))
 
@@ -1288,8 +1297,8 @@
     (emitln "goog.require('cljs.core');")
     (when (-> @env/*compiler* :options :emit-constants)
       (emitln "goog.require('" (munge ana/constants-ns-sym) "');")))
-  (load-libs requires nil (:require reloads) deps name)
-  (load-libs uses requires (:use reloads) deps name))
+  (load-libs requires nil (:require reloads) env deps name)
+  (load-libs uses requires (:use reloads) env deps name))
 
 (defmethod emit* :deftype
   [{:keys [t fields pmasks body protocols]}]
