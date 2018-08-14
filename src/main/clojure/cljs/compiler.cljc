@@ -1061,11 +1061,23 @@
 (defmethod emit* :recur
   [{:keys [frame exprs env]}]
   (let [temps (vec (take (count exprs) (repeatedly gensym)))
-        params (:params frame)]
-    (dotimes [i (count exprs)]
-      (emitln "var " (temps i) " = " (exprs i) ";"))
-    (dotimes [i (count exprs)]
-      (emitln (munge (params i)) " = " (temps i) ";"))
+        params (:params frame)
+        include? (mapv (fn [param expr]
+                         (binding [*source-map-data* nil]
+                           (not= (with-out-str (emits (munge param)))
+                                 (with-out-str (emits expr)))))
+                   params exprs)]
+    (if (== 1 (count (filter true? include?)))
+      (dotimes [i (count exprs)]
+        (when (include? i)
+          (emitln (munge (params i)) " = " (exprs i) ";")))
+      (do
+        (dotimes [i (count exprs)]
+          (when (include? i)
+            (emitln "var " (temps i) " = " (exprs i) ";")))
+        (dotimes [i (count exprs)]
+          (when (include? i)
+            (emitln (munge (params i)) " = " (temps i) ";")))))
     (emitln "continue;")))
 
 (defmethod emit* :letfn
