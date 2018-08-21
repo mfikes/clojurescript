@@ -838,8 +838,11 @@
                     (apply core/str))]
     (list* 'js* (core/str "[" strs "].join('')") xs)))
 
+(core/defn- type-expr [tag e]
+  (vary-meta e assoc :tag tag))
+
 (core/defn- bool-expr [e]
-  (vary-meta e assoc :tag 'boolean))
+  (type-expr 'boolean e))
 
 (core/defn- simple-test-expr? [env ast]
   (core/and
@@ -854,7 +857,8 @@
   ([] true)
   ([x] x)
   ([x & next]
-   (core/let [forms (concat [x] next)]
+   (core/let [forms (concat [x] next)
+              analyzed-forms (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms)]
      (if (every? #(simple-test-expr? &env %)
            (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms))
        (core/let [and-str (core/->> (repeat (count forms) "(~{})")
@@ -862,8 +866,10 @@
                             (#(concat ["("] % [")"]))
                             (apply core/str))]
          (bool-expr `(~'js* ~and-str ~@forms)))
-       `(let [and# ~x]
-          (if and# (and ~@next) and#))))))
+       (core/let [tmp (gensym)
+                  tag (ana/infer-and (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))]
+         `(let [~tmp ~x]
+            ~(type-expr tag `(if ~tmp (and ~@next) ~tmp))))))))
 
 (core/defmacro or
   "Evaluates exprs one at a time, from left to right. If a form
@@ -873,16 +879,18 @@
   ([] nil)
   ([x] x)
   ([x & next]
-   (core/let [forms (concat [x] next)]
-     (if (every? #(simple-test-expr? &env %)
-           (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms))
+   (core/let [forms (concat [x] next)
+              analyzed-forms (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms)]
+     (if (every? #(simple-test-expr? &env %) analyzed-forms)
        (core/let [or-str (core/->> (repeat (count forms) "(~{})")
                            (interpose " || ")
                            (#(concat ["("] % [")"]))
                            (apply core/str))]
          (bool-expr `(~'js* ~or-str ~@forms)))
-       `(let [or# ~x]
-          (if or# or# (or ~@next)))))))
+       (core/let [tmp (gensym)
+                  tag (ana/infer-or (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))]
+         `(let [~tmp ~x]
+            ~(type-expr tag `(if ~tmp ~tmp (or ~@next)))))))))
 
 (core/defmacro nil? [x]
   `(coercive-= ~x nil))

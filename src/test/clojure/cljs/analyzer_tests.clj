@@ -175,6 +175,45 @@
         "Only one ")))
 
 ;; =============================================================================
+;; Tag utilty tests
+
+(deftest type-set-test
+  (is (= #{nil} (a/type-set nil)))
+  (is (= '#{any} (a/type-set 'any)))
+  (is (= '#{boolean} (a/type-set 'boolean)))
+  (is (= '#{boolean string} (a/type-set '#{boolean string}))))
+
+(deftest canonicalize-type-test
+  (is (nil? (a/canonicalize-type nil)))
+  (is (= 'boolean (a/canonicalize-type 'boolean)))
+  (is (nil? (a/canonicalize-type #{})))
+  (is (= 'boolean (a/canonicalize-type '#{boolean})))
+  (is (= 'any (a/canonicalize-type '#{boolean any})))
+  (is (= '#{boolean string} (a/canonicalize-type '#{boolean string})))
+  (is (= '#{string seq} (a/canonicalize-type '#{clj-nil string seq})))
+  (is (= 'seq (a/canonicalize-type '#{clj-nil seq}))))
+
+(deftest add-types-test
+  (is (= 'any (a/add-types nil nil)))
+  (is (= 'boolean (a/add-types 'boolean 'boolean)))
+  (is (= 'any (a/add-types 'boolean nil)))
+  (is (= 'any (a/add-types 'boolean 'any)))
+  (is (= 'any (a/add-types 'any nil)))
+  (is (= '#{boolean string} (a/add-types 'boolean 'string)))
+  (is (= '#{boolean string number} (a/add-types 'boolean 'string 'number)))
+  (is (= 'any (a/add-types 'boolean 'string nil)))
+  (is (= 'any (a/add-types 'boolean 'string 'any))))
+
+(deftest subtract-types-test
+  (is (= 'any (a/subtract-types nil nil)))
+  (is (= 'any (a/subtract-types nil 'boolean)))
+  (is (= 'any (a/subtract-types 'boolean 'boolean)))
+  (is (= 'any (a/subtract-types 'any 'any)))
+  (is (= 'boolean (a/subtract-types '#{boolean string} 'string)))
+  (is (= 'boolean (a/subtract-types 'boolean 'any)))
+  (is (= 'any (a/subtract-types 'any 'boolean))))
+
+;; =============================================================================
 ;; Inference tests
 
 (def test-cenv (atom {}))
@@ -216,6 +255,199 @@
   (is (= (e/with-compiler-env test-cenv
            (:tag (a/analyze test-env '(fn [x] x))))
          'function)))
+
+(deftest and-inference
+  (are [inferred form]
+    (= inferred (e/with-compiler-env test-cenv
+                  (:tag (a/no-warn (a/analyze test-env form)))))
+    'boolean '(and)
+    'string '(and "a")
+    'clj-nil '(and nil)
+    'boolean '(and true)
+    'number '(and 10)
+    'clj-nil '(and nil 10)
+    'clj-nil '(and "a" nil 10)
+    'string '(and 10 "a")
+    '#{boolean number} '(and (even? (int (system-time))) 10)
+    'boolean '(and (even? (int (system-time))) (even? (int (system-time))))
+    '#{boolean number} '(and (even? (int (system-time))) "a" 10)
+    '#{boolean number} '(and "a" (even? (int (system-time))) 10)
+    '#{clj-nil number} '(and (when (even? (int (system-time))) "a") 10)
+    '#{clj-nil boolean number} '(and (when (even? (int (system-time)))
+                                       (even? (int (* 10 (system-time)))))
+                                     10)
+    '#{clj-nil boolean number} '(let [x ^any []] (and x 10))
+    '#{string number} '(let [x ^any []] (and :kw (if x "3" 10)))
+    '#{boolean ignore} '(loop [] (and (even? (int (system-time))) (recur)))
+    'clj-nil '(loop [] (and nil (recur)))
+    '#{boolean ignore} '(and (even? (int (system-time))) (throw :x))
+    'ignore '(and (throw :x) (even? (int (system-time))))
+    'clj-nil '(and nil (throw :x))
+    '#{clj-nil number} '(and (seq []) 10)))
+
+(deftest or-inference
+  (are [inferred form]
+    (= inferred (e/with-compiler-env test-cenv
+                  (:tag (a/no-warn (a/analyze test-env form)))))
+    'clj-nil '(or)
+    'string '(or "a")
+    'clj-nil '(or nil)
+    'boolean '(or true)
+    'number '(or 10)
+    'number '(or nil 10)
+    'string '(or "a" nil 10)
+    'number '(or 10 "a")
+    '#{boolean number} '(or (even? (int (system-time))) 10)
+    'boolean '(or (even? (int (system-time))) (even? (int (system-time))))
+    '#{boolean string} '(or (even? (int (system-time))) "a" 10)
+    'string '(or "a" (even? (int (system-time))) 10)
+    '#{string number} '(or (when (even? (int (system-time))) "a") 10)
+    'boolean '(or (when (even? (int (system-time))) true) false)
+    '#{boolean number} '(or (when (even? (int (system-time)))
+                                       (even? (int (* 10 (system-time)))))
+                                     10)
+    'any '(let [x ^any []] (or x 10))
+    '#{string number} '(let [x ^any []] (or (if x "3" 10) :kw))
+    'number '(loop [] (or 10 (recur)))
+    'number '(or 10 (throw :x))
+    '#{seq number} '(or (seq []) 10)))
+
+;; Reference implementations of infer-and and infer-or which work for a limited set of
+;; tags and values chosen to provide full coverage without loss of generality.
+;; This works by exhaustively generating values for the tags, passing them to the actual
+;; and / or macros, and forming tags from the set of values produced. The reference impls
+;; are essentially simple, brute-force ways to ascertain the types of and / or expressions
+;; involving certain tags, up to arithy 4 which should cover all interesting cases.
+;; We use a special ::any value to masquerade as any value outside of our limited set
+;; of types.
+
+(defn tag->values
+  "Given a tag, produce a collection of all interesting values for that tag."
+  [tag]
+  (let [sym->vals '{clj-nil [nil]
+                    boolean [false true]
+                    number  [10]
+                    string  ["a"]
+                    seq     [nil '(10)]
+                    any     [nil false true 10 a ::any]}]
+    (mapcat sym->vals (a/type-set tag))))
+
+(defn values->tag
+  "Given a collection of values, produces a tag."
+  [values]
+  (a/canonicalize-type (into #{} (map '{nil   clj-nil
+                                        false boolean
+                                        true  boolean
+                                        10    number
+                                        "a"   string
+                                        '(10)  seq
+                                        ::any any} values))))
+
+(defn infer-and-ref
+  "A reference implementation of infer-and."
+  [tags]
+  (->> (case (count tags)
+         1 (for [x (tag->values (nth tags 0))]
+             (and x))
+         2 (for [x (tag->values (nth tags 0))
+                 y (tag->values (nth tags 1))]
+             (and x y))
+         3 (for [x (tag->values (nth tags 0))
+                 y (tag->values (nth tags 1))
+                 z (tag->values (nth tags 2))]
+             (and x y z))
+         4 (for [x (tag->values (nth tags 0))
+                 y (tag->values (nth tags 1))
+                 z (tag->values (nth tags 2))
+                 t (tag->values (nth tags 3))]
+             (and x y z t)))
+    (into #{})
+    values->tag))
+
+(defn infer-or-ref
+  "A reference implementation of infer-or."
+  [tags]
+  (->> (case (count tags)
+         1 (for [x (tag->values (nth tags 0))]
+             (or x))
+         2 (for [x (tag->values (nth tags 0))
+                 y (tag->values (nth tags 1))]
+             (or x y))
+         3 (for [x (tag->values (nth tags 0))
+                 y (tag->values (nth tags 1))
+                 z (tag->values (nth tags 2))]
+             (or x y z))
+         4 (for [x (tag->values (nth tags 0))
+                 y (tag->values (nth tags 1))
+                 z (tag->values (nth tags 2))
+                 t (tag->values (nth tags 3))]
+             (or x y z t)))
+    (into #{})
+    values->tag))
+
+(defn power-set [s]
+  (reduce (fn [p e] (into p (map #(conj % e) p))) #{#{}} s))
+
+;; Enumerate all of the possible interesting tag combinations to test with.
+(def tag-choices
+  (for [x (power-set '#{clj-nil boolean seq})   ;; can admit false-y
+        y (power-set '#{number string})]        ;; cannot admit false-y
+    (a/canonicalize-type (or (not-empty (into x y))
+                             'any))))
+
+(deftest infer-and-test
+  (are [tagss]
+    (every? (fn [tags] (= (infer-and-ref tags) (a/infer-and tags))) tagss)
+    ;; If failing, use this instead for more insight
+    #_(every? :same (for [tags tagss]
+                    (let [ref (infer-and-ref tags)
+                          act (a/infer-and tags)]
+                      {:tags tags
+                       :ref  ref
+                       :act  act
+                       :same (= ref act)})))
+    (for [t1 tag-choices]
+      [t1])
+    (for [t1 tag-choices
+          t2 tag-choices]
+      [t1 t2])
+    (for [t1 tag-choices
+            t2 tag-choices
+            t3 tag-choices]
+        [t1 t2 t3])
+    ;; Uncomment for arity-4 test
+    #_(for [t1 tag-choices
+          t2 tag-choices
+          t3 tag-choices
+          t4 tag-choices]
+      [t1 t2 t3 t4])))
+
+(deftest infer-or-test
+  (are [tagss]
+    (every? (fn [tags] (= (infer-or-ref tags) (a/infer-or tags))) tagss)
+    ;; If failing, use this instead for more insight
+    #_(every? :same (for [tags tagss]
+                      (let [ref (infer-or-ref tags)
+                            act (a/infer-or tags)]
+                        {:tags tags
+                         :ref  ref
+                         :act  act
+                         :same (= ref act)})))
+    (for [t1 tag-choices]
+      [t1])
+    (for [t1 tag-choices
+          t2 tag-choices]
+      [t1 t2])
+    (for [t1 tag-choices
+          t2 tag-choices
+          t3 tag-choices]
+      [t1 t2 t3])
+    ;; Uncomment for arity-4 test
+    #_(for [t1 tag-choices
+          t2 tag-choices
+          t3 tag-choices
+          t4 tag-choices]
+      [t1 t2 t3 t4])))
 
 (deftest if-inference
   (is (= (a/no-warn

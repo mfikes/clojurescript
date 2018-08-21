@@ -886,6 +886,54 @@
                  'prototype)})
     x))
 
+(defn type-set
+  "Ensures that a type tag is a set."
+  [t]
+  (if #?(:clj  (set? t)
+         :cljs (cljs-set? t))
+    t
+    #{t}))
+
+(defn canonicalize-type [t]
+  "Ensures that a type tag is either nil, a type symbol, or a non-singleton
+  set of type symbols, absorbing clj-nil into seq and all types into any."
+  (cond
+    (symbol? t) t
+    (empty? t) nil
+    (== 1 (count t)) (first t)
+    (contains? t 'any) 'any
+    (contains? t 'seq) (let [res (disj t 'clj-nil)]
+                         (if (== 1 (count res))
+                           'seq
+                           res))
+    :else t))
+
+(defn add-types
+  "Produces a union of types."
+  ([] 'any)
+  ([t1] t1)
+  ([t1 t2]
+   (if (or (nil? t1)
+           (nil? t2))
+     'any
+     (-> (set/union (type-set t1) (type-set t2))
+       canonicalize-type)))
+  ([t1 t2 & ts]
+   (apply add-types (add-types t1 t2) ts)))
+
+(defn subtract-types
+  "Subtract types from a type."
+  ([t1] t1)
+  ([t1 t2]
+   (if (or (nil? t1)
+           (= 'any t1)
+           (= t1 t2))
+     'any
+     (-> (set/difference (type-set t1) (type-set t2))
+       canonicalize-type)))
+  ([t1 t2 & ts]
+   (apply subtract-types (subtract-types t1 t2) ts)))
+
 (def alias->type
   '{object   Object
     string   String
@@ -1314,6 +1362,59 @@
     (:expr expr)
     expr))
 
+(defn- admits?
+  [t x]
+  (cond
+    (nil? t) true
+    (= x t) true
+    (= 'any t) true
+    (js-tag? t) true ;; TODO: revisit
+    :else
+    (when #?(:clj  (set? t)
+             :cljs (cljs-set? t))
+      (or (contains? t x)
+          (contains? t 'any)
+          (contains? t 'js)))))
+
+(defn- admits-nil? [t]
+  (or
+   (admits? t 'clj-nil)
+   (admits? t 'seq)))
+
+(defn- admits-false? [t]
+  (admits? t 'boolean))
+
+(defn- admits-falsey? [t]
+  (or (admits-nil? t)
+      (admits-false? t)))
+
+(defn infer-and [ts]
+  (reduce (fn [t1 t2]
+            (if ('#{clj-nil ignore} t1)
+              (reduced t1)
+              (if (= 'clj-nil t2)
+                (if (admits-false? t1)
+                  (reduced '#{boolean clj-nil})
+                  (reduced 'clj-nil))
+                (let [x (into #{} (remove nil?
+                                    [(when (admits-nil? t1) 'clj-nil)
+                                     (when (admits-false? t1) 'boolean)]))]
+                  (if (empty? x)
+                    t2
+                    (add-types x t2))))))
+    ts))
+
+(defn infer-or [ts]
+  (reduce (fn [t1 t2]
+            (if (= 'clj-nil t1)
+              t2
+              (if (admits-falsey? t1)
+                (if (admits-falsey? t2)
+                  (add-types (subtract-types t1 'clj-nil) t2)
+                  (reduced (add-types (subtract-types t1 'clj-nil) t2)))
+                (reduced t1))))
+    ts))
+
 (defn infer-if [env e]
   (let [{:keys [op form]} (unwrap-quote (:test e))
         then-tag (infer-tag env (:then e))]
@@ -1338,13 +1439,7 @@
           (if (and (some? (get BOOLEAN_OR_SEQ then-tag))
                    (some? (get BOOLEAN_OR_SEQ else-tag)))
             'seq
-            (let [then-tag (if #?(:clj (set? then-tag)
-                                  :cljs (cljs-set? then-tag))
-                             then-tag #{then-tag})
-                  else-tag (if #?(:clj (set? else-tag)
-                                  :cljs (cljs-set? else-tag))
-                             else-tag #{else-tag})]
-              (into then-tag else-tag))))))))
+            (add-types then-tag else-tag)))))))
 
 (defn infer-invoke [env e]
   (let [{info :info :as f} (:fn e)]
@@ -1632,9 +1727,11 @@
         sym (:sym args)
         const? (-> sym meta :const)
         sym-meta (meta sym)
-        tag (-> sym meta :tag)
         protocol (-> sym meta :protocol valid-proto)
         dynamic (-> sym meta :dynamic)
+        tag (or (-> sym meta :tag)
+                (and dynamic 'any)
+                nil)
         ns-name (-> env :ns :name)
         locals (:locals env)
         clash-ns (symbol (str ns-name "." sym))
