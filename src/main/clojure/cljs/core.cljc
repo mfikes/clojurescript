@@ -869,7 +869,7 @@
        (core/let [tmp (gensym)
                   tag (ana/infer-and (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))]
          `(let [~tmp ~x]
-            ~(type-expr tag `(if ~tmp (and ~@next) ~tmp))))))))
+            ~`(if ~tmp (and ~@next) ~tmp)))))))
 
 (core/defmacro or
   "Evaluates exprs one at a time, from left to right. If a form
@@ -890,7 +890,7 @@
        (core/let [tmp (gensym)
                   tag (ana/infer-or (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))]
          `(let [~tmp ~x]
-            ~(type-expr tag `(if ~tmp ~tmp (or ~@next)))))))))
+            ~`(if ~tmp ~tmp (or ~@next))))))))
 
 (core/defmacro nil? [x]
   `(coercive-= ~x nil))
