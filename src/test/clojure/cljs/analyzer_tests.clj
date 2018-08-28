@@ -224,9 +224,13 @@
     (binding [a/*analyze-deps* false]
       (a/analyze-file (io/file "src/main/cljs/cljs/core.cljs")))))
 
+(defn inferred-tag [form]
+  (e/with-compiler-env test-cenv
+    (:tag (a/no-warn (a/analyze test-env
+                       form)))))
+
 (deftest basic-inference
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '1)))
+  (is (= (inferred-tag '1)
          'number))
   (is (= (e/with-compiler-env test-cenv
            (:tag (a/analyze test-env '"foo")))
@@ -258,8 +262,7 @@
 
 (deftest and-inference
   (are [inferred form]
-    (= inferred (e/with-compiler-env test-cenv
-                  (:tag (a/no-warn (a/analyze test-env form)))))
+    (= inferred (inferred-tag form))
     'boolean '(and)
     'string '(and "a")
     'clj-nil '(and nil)
@@ -287,8 +290,7 @@
 
 (deftest or-inference
   (are [inferred form]
-    (= inferred (e/with-compiler-env test-cenv
-                  (:tag (a/no-warn (a/analyze test-env form)))))
+    (= inferred (inferred-tag form))
     'clj-nil '(or)
     'string '(or "a")
     'clj-nil '(or nil)
@@ -364,6 +366,21 @@
     (into #{})
     values->tag))
 
+(defn tagged-local [tag]
+  (with-meta (gensym) {:tag tag}))
+
+(defn infer-act [op tags]
+  (let [form (list* op (map tagged-local tags))]
+    (inferred-tag form)))
+
+(defn infer-or-act
+  [tags]
+  (infer-act 'or tags))
+
+(defn infer-and-act
+  [tags]
+  (infer-act 'and tags))
+
 (defn infer-or-ref
   "A reference implementation of infer-or."
   [tags]
@@ -397,21 +414,21 @@
 
 (deftest infer-and-test
   (are [tagss]
-    (every? (fn [tags] (= (infer-and-ref tags) (a/infer-and tags))) tagss)
+    #_(every? (fn [tags] (= (infer-and-ref tags) (infer-and-act tags))) tagss)
     ;; If failing, use this instead for more insight
-    #_(every? :same (for [tags tagss]
+    (every? :same (for [tags tagss]
                     (let [ref (infer-and-ref tags)
-                          act (a/infer-and tags)]
+                          act (infer-and-act tags)]
                       {:tags tags
                        :ref  ref
                        :act  act
                        :same (= ref act)})))
-    (for [t1 tag-choices]
+    #_(for [t1 tag-choices]
       [t1])
     (for [t1 tag-choices
           t2 tag-choices]
       [t1 t2])
-    (for [t1 tag-choices
+    #_(for [t1 tag-choices
             t2 tag-choices
             t3 tag-choices]
         [t1 t2 t3])
@@ -424,11 +441,11 @@
 
 (deftest infer-or-test
   (are [tagss]
-    (every? (fn [tags] (= (infer-or-ref tags) (a/infer-or tags))) tagss)
+    (every? (fn [tags] (= (infer-or-ref tags) (infer-or-act tags))) tagss)
     ;; If failing, use this instead for more insight
     #_(every? :same (for [tags tagss]
                       (let [ref (infer-or-ref tags)
-                            act (a/infer-or tags)]
+                            act (infer-or-act tags)]
                         {:tags tags
                          :ref  ref
                          :act  act
