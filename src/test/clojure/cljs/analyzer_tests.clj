@@ -281,10 +281,10 @@
                                      10)
     '#{clj-nil boolean number} '(let [x ^any []] (and x 10))
     '#{string number} '(let [x ^any []] (and :kw (if x "3" 10)))
-    '#{boolean ignore} '(loop [] (and (even? (int (system-time))) (recur)))
+    'boolean '(loop [] (and (even? (int (system-time))) (recur))) ;; TODO confirm
     'clj-nil '(loop [] (and nil (recur)))
-    '#{boolean ignore} '(and (even? (int (system-time))) (throw :x))
-    'ignore '(and (throw :x) (even? (int (system-time))))
+    'boolean '(and (even? (int (system-time))) (throw :x))
+    'boolean '(and (throw :x) (even? (int (system-time))))  ;; TODO confirm
     'clj-nil '(and nil (throw :x))
     '#{clj-nil number} '(and (seq []) 10)))
 
