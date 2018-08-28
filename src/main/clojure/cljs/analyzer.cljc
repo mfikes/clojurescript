@@ -1425,11 +1425,11 @@
       then-tag
       (let [else-tag (infer-tag env (:else e))]
         (cond
-          #_#_(or #?(:clj (= then-tag else-tag)
+          (or #?(:clj (= then-tag else-tag)
                  :cljs (symbol-identical? then-tag else-tag))
               #?(:clj (= else-tag IGNORE_SYM)
                  :cljs (symbol-identical? else-tag IGNORE_SYM))) then-tag
-          #_#_#?(:clj (= then-tag IGNORE_SYM)
+          #?(:clj (= then-tag IGNORE_SYM)
              :cljs (symbol-identical? then-tag IGNORE_SYM)) else-tag
           ;; TODO: temporary until we move not-native -> clj - David
           (and (or (some? (get NOT_NATIVE then-tag)) (type? env then-tag))
