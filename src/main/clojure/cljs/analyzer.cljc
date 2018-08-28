@@ -1388,33 +1388,6 @@
   (or (admits-nil? t)
       (admits-false? t)))
 
-(defn infer-and [ts]
-  (reduce (fn [t1 t2]
-            (if ('#{clj-nil ignore} t1)
-              (reduced t1)
-              (if (= 'clj-nil t2)
-                (if (admits-false? t1)
-                  (reduced '#{boolean clj-nil})
-                  (reduced 'clj-nil))
-                (let [x (into #{} (remove nil?
-                                    [(when (admits-nil? t1) 'clj-nil)
-                                     (when (admits-false? t1) 'boolean)]))]
-                  (if (empty? x)
-                    t2
-                    (add-types x t2))))))
-    ts))
-
-(defn infer-or [ts]
-  (reduce (fn [t1 t2]
-            (if (= 'clj-nil t1)
-              t2
-              (if (admits-falsey? t1)
-                (if (admits-falsey? t2)
-                  (add-types (subtract-types t1 'clj-nil) t2)
-                  (reduced (add-types (subtract-types t1 'clj-nil) t2)))
-                (reduced t1))))
-    ts))
-
 (defn infer-if [env e]
   (let [{:keys [op form]} (unwrap-quote (:test e))
         then-tag (infer-tag env (:then e))]
