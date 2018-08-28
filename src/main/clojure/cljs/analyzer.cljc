@@ -1408,31 +1408,30 @@
           (and (or (some? (get NOT_NATIVE then-tag)) (type? env then-tag))
                (or (some? (get NOT_NATIVE else-tag)) (type? env else-tag)))
           'clj
-          :else
-          (cond
-            (= (:form (:test e)) (:form (:then e)))
+
+          (= (:form (:test e)) (:form (:then e)))
+          (if (= 'clj-nil then-tag)
+            else-tag
+            (if (admits-falsey? then-tag)
+              (add-types (subtract-types then-tag 'clj-nil) else-tag)
+              then-tag))
+
+          (= (:form (:test e)) (:form (:else e)))
+          (if ('#{clj-nil ignore} else-tag)
+            else-tag
             (if (= 'clj-nil then-tag)
-              else-tag
-              (if (admits-falsey? then-tag)
-                (add-types (subtract-types then-tag 'clj-nil) else-tag)
-                then-tag))
+              (if (admits-false? else-tag)
+                '#{boolean clj-nil}
+                'clj-nil)
+              (let [x (into #{} (remove nil?
+                                  [(when (admits-nil? else-tag) 'clj-nil)
+                                   (when (admits-false? else-tag) 'boolean)]))]
+                (if (empty? x)
+                  then-tag
+                  (add-types x then-tag)))))
 
-            (= (:form (:test e)) (:form (:else e)))
-            (if ('#{clj-nil ignore} else-tag)
-              else-tag
-              (if (= 'clj-nil then-tag)
-                (if (admits-false? else-tag)
-                  '#{boolean clj-nil}
-                  'clj-nil)
-                (let [x (into #{} (remove nil?
-                                    [(when (admits-nil? else-tag) 'clj-nil)
-                                     (when (admits-false? else-tag) 'boolean)]))]
-                  (if (empty? x)
-                    then-tag
-                    (add-types x then-tag)))))
-
-            :else
-            (add-types then-tag else-tag)))))))
+          :else
+          (add-types then-tag else-tag))))))
 
 (defn infer-invoke [env e]
   (let [{info :info :as f} (:fn e)]

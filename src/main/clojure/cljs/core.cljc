@@ -866,8 +866,7 @@
                             (#(concat ["("] % [")"]))
                             (apply core/str))]
          (bool-expr `(~'js* ~and-str ~@forms)))
-       (core/let [tmp (gensym)
-                  tag (ana/infer-and (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))]
+       (core/let [tmp (gensym)]
          `(let [~tmp ~x]
             ~`(if ~tmp (and ~@next) ~tmp)))))))
 
@@ -887,8 +886,7 @@
                            (#(concat ["("] % [")"]))
                            (apply core/str))]
          (bool-expr `(~'js* ~or-str ~@forms)))
-       (core/let [tmp (gensym)
-                  tag (ana/infer-or (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))]
+       (core/let [tmp (gensym)]
          `(let [~tmp ~x]
             ~`(if ~tmp ~tmp (or ~@next))))))))
 
