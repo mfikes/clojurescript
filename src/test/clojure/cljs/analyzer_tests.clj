@@ -414,15 +414,17 @@
 
 (deftest infer-and-test
   (are [tagss]
-    #_(every? (fn [tags] (= (infer-and-ref tags) (infer-and-act tags))) tagss)
+    #_(every? (fn [tags] (= (infer-and-ref tags) (infer-and-act tags) (a/infer-and tags))) tagss)
     ;; If failing, use this instead for more insight
     (every? :same (for [tags tagss]
                     (let [ref (infer-and-ref tags)
-                          act (infer-and-act tags)]
+                          act (infer-and-act tags)
+                          act2 (a/infer-or tags)]
                       {:tags tags
                        :ref  ref
                        :act  act
-                       :same (= ref act)})))
+                       :act2 act2
+                       :same (= ref act act2)})))
     #_(for [t1 tag-choices]
       [t1])
     (for [t1 tag-choices
@@ -441,15 +443,17 @@
 
 (deftest infer-or-test
   (are [tagss]
-    #_(every? (fn [tags] (= (infer-or-ref tags) (infer-or-act tags))) tagss)
+    #_(every? (fn [tags] (= (infer-or-ref tags) (infer-or-act tags) (a/infer-or tags))) tagss)
     ;; If failing, use this instead for more insight
     (every? :same (for [tags tagss]
                       (let [ref (infer-or-ref tags)
-                            act (infer-or-act tags)]
+                            act (infer-or-act tags)
+                            act2 (a/infer-or tags)]
                         {:tags tags
                          :ref  ref
                          :act  act
-                         :same (= ref act)})))
+                         :act2 act2
+                         :same (= ref act act2)})))
     #_(for [t1 tag-choices]
       [t1])
     (for [t1 tag-choices
