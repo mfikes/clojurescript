@@ -462,111 +462,77 @@
       [t1 t2 t3 t4])))
 
 (deftest if-inference
-  (is (= (a/no-warn
-           (e/with-compiler-env test-cenv
-             (:tag (a/analyze test-env '(if x "foo" 1)))))
+  (is (= (inferred-tag '(if x "foo" 1)))
          '#{number string})))
 
 (deftest method-inference
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '(.foo js/bar))))
+  (is (= (inferred-tag '(.foo js/bar))
          'js)))
 
 (deftest fn-inference
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env
-  ;                 '(let [x (fn ([a] 1) ([a b] "foo") ([a b & r] ()))]
-  ;                    (x :one)))))
+  ;(is (= (inferred-tag
+  ;         '(let [x (fn ([a] 1) ([a b] "foo") ([a b & r] ()))]
+  ;            (x :one)))
   ;      'number))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env
-  ;                 '(let [x (fn ([a] 1) ([a b] "foo") ([a b & r] ()))]
-  ;                    (x :one :two)))))
+  ;(is (= (inferred-tag '(let [x (fn ([a] 1) ([a b] "foo") ([a b & r] ()))]
+  ;                        (x :one :two)))
   ;      'string))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env
-  ;                 '(let [x (fn ([a] 1) ([a b] "foo") ([a b & r] ()))]
-  ;                    (x :one :two :three)))))
+  ;(is (= (inferred-tag
+  ;         '(let [x (fn ([a] 1) ([a b] "foo") ([a b & r] ()))]
+  ;            (x :one :two :three)))
   ;      'cljs.core/IList))
   )
 
 (deftest lib-inference
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '(+ 1 2))))
+  (is (= (inferred-tag '(+ 1 2))
          'number))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(alength (array)))))
+  ;(is (= (inferred-tag '(alength (array)))
   ;       'number))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(aclone (array)))))
+  ;(is (= (inferred-tag '(aclone (array)))
   ;       'array))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(-count [1 2 3]))))
+  ;(is (= (inferred-tag '(-count [1 2 3]))
   ;      'number))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(count [1 2 3]))))
+  ;(is (= (inferred-tag '(count [1 2 3]))
   ;       'number))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(into-array [1 2 3]))))
+  ;(is (= (inferred-tag '(into-array [1 2 3]))
   ;       'array))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(js-obj))))
+  ;(is (= (inferred-tag '(js-obj))
   ;       'object))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(-conj [] 1))))
+  ;(is (= (inferred-tag '(-conj [] 1))
   ;       'clj))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(conj [] 1))))
+  ;(is (= (inferred-tag '(conj [] 1))
   ;       'clj))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(assoc nil :foo :bar))))
+  ;(is (= (inferred-tag '(assoc nil :foo :bar))
   ;       'clj))
-  ;(is (= (e/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(dissoc {:foo :bar} :foo))))
+  ;(is (= (inferred-tag '(dissoc {:foo :bar} :foo))
   ;       '#{clj clj-nil}))
   )
 
 (deftest test-always-true-if
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '(if 1 2 "foo"))))
+  (is (= (inferred-tag '(if 1 2 "foo"))
          'number)))
 
 ;; will only work if the previous test works
 (deftest test-count
-  ;(is (= (cljs.env/with-compiler-env test-cenv
-  ;         (:tag (a/analyze test-env '(count []))))
+  ;(is (= (inferred-tag '(count []))
   ;       'number))
   )
 
 (deftest test-numeric
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(dec x)))))
+  ;(is (= (inferred-tag '(dec x))
   ;       'number))
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(int x)))))
+  ;(is (= (inferred-tag '(int x))
   ;       'number))
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(unchecked-int x)))))
+  ;(is (= (inferred-tag '(unchecked-int x))
   ;       'number))
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(mod x y)))))
+  ;(is (= (inferred-tag '(mod x y))
   ;       'number))
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(quot x y)))))
+  ;(is (= (inferred-tag '(quot x y))
   ;       'number))
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(rem x y)))))
+  ;(is (= (inferred-tag '(rem x y))
   ;       'number))
-  ;(is (= (a/no-warn
-  ;         (cljs.env/with-compiler-env test-cenv
-  ;           (:tag (a/analyze test-env '(bit-count n)))))
-  ;       'number))
+  ;(is (= (inferred-tag '(bit-count n)))
+  ;       'number)
   )
 
 ;; =============================================================================
