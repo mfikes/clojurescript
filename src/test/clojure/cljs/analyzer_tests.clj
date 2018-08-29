@@ -512,7 +512,7 @@
 
 (deftest if-inference
   (is (= (inferred-tag '(if x "foo" 1)))
-         '#{number string})))
+         '#{number string}))
 
 (deftest method-inference
   (is (= (inferred-tag '(.foo js/bar))
