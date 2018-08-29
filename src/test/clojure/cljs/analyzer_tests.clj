@@ -336,26 +336,45 @@
                                         '(10)  seq
                                         ::any any} values))))
 
+(defn results->tag [results]
+  (->> results
+    (into #{})
+    values->tag))
+
+(defn infer-if-ref
+  "A reference implementation, inferring an if tag from test, then, and
+  (optionally) else tags."
+  ([test-tag then-tag]
+   (for [test (tag->values test-tag)
+         then (tag->values then-tag)]
+     (if test then)))
+  ([test-tag then-tag else-tag]
+   (results->tag
+     (for [test (tag->values test-tag)
+           then (tag->values then-tag)
+           else (tag->values else-tag)]
+       (if test then else)))))
+
 (defn infer-and-ref
   "A reference implementation of infer-and."
   [tags]
-  (->> (case (count tags)
-         1 (for [x (tag->values (nth tags 0))]
-             (and x))
-         2 (for [x (tag->values (nth tags 0))
-                 y (tag->values (nth tags 1))]
-             (and x y))
-         3 (for [x (tag->values (nth tags 0))
-                 y (tag->values (nth tags 1))
-                 z (tag->values (nth tags 2))]
-             (and x y z))
-         4 (for [x (tag->values (nth tags 0))
-                 y (tag->values (nth tags 1))
-                 z (tag->values (nth tags 2))
-                 t (tag->values (nth tags 3))]
-             (and x y z t)))
-    (into #{})
-    values->tag))
+  (results->tag
+    (case (count tags)
+      1 (for [x (tag->values (nth tags 0))]
+          (and x))
+      2 (for [x (tag->values (nth tags 0))
+              y (tag->values (nth tags 1))]
+          (and x y))
+      3 (for [x (tag->values (nth tags 0))
+              y (tag->values (nth tags 1))
+              z (tag->values (nth tags 2))]
+          (and x y z))
+      4 (for [x (tag->values (nth tags 0))
+              y (tag->values (nth tags 1))
+              z (tag->values (nth tags 2))
+              t (tag->values (nth tags 3))]
+          (and x y z t)))))
+
 
 (defn tagged-local [tag]
   (with-meta (gensym) {:tag tag}))
@@ -363,6 +382,12 @@
 (defn infer-act [op tags]
   (let [form (list* op (map tagged-local tags))]
     (inferred-tag form)))
+
+(defn infer-if-act
+  ([test-tag then-tag]
+   (infer-act 'if [test-tag then-tag]))
+  ([test-tag then-tag else-tag]
+   (infer-act 'if [test-tag then-tag else-tag])))
 
 (defn infer-or-act
   [tags]
@@ -402,6 +427,30 @@
         y (power-set '#{number string})]        ;; cannot admit false-y
     (a/canonicalize-type (or (not-empty (into x y))
                              'any))))
+
+(deftest infer-if-test
+  (are [tagss]
+    (every? (fn [[test-tag then-tag else-tag]]
+              (if (= else-tag ::no-else)
+                (= (infer-if-ref test-tag then-tag) (infer-if-act test-tag then-tag))
+                (= (infer-if-ref test-tag then-tag else-tag) (infer-if-act test-tag then-tag else-tag)))) tagss)
+    ;; If failing, use this instead for more insight
+    #_(every? :same (for [tags tagss]
+                      (let [ref (infer-or-ref tags)
+                            act (infer-or-act tags)
+                            act2 (a/infer-or tags)]
+                        {:tags tags
+                         :ref  ref
+                         :act  act
+                         :act2 act2
+                         :same (= ref act act2)})))
+    (for [test-tag tag-choices
+          then-tag tag-choices]
+      [test-tag then-tag ::no-else])
+    (for [test-tag tag-choices
+          then-tag tag-choices
+          else-tag tag-choices]
+      [test-tag then-tag else-tag])))
 
 (deftest infer-and-test
   (are [tagss]
@@ -456,10 +505,10 @@
       [t1 t2 t3])
     ;; Uncomment for arity-4 test
     #_(for [t1 tag-choices
-          t2 tag-choices
-          t3 tag-choices
-          t4 tag-choices]
-      [t1 t2 t3 t4])))
+            t2 tag-choices
+            t3 tag-choices
+            t4 tag-choices]
+        [t1 t2 t3 t4])))
 
 (deftest if-inference
   (is (= (inferred-tag '(if x "foo" 1)))
