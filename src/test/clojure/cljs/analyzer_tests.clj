@@ -489,7 +489,8 @@
           t2 tag-choices
           t3 tag-choices]
       [t1 t2 t3])
-    (for [t1 tag-choices
+    ;; Uncomment for more extensive arity-4 tests
+    #_(for [t1 tag-choices
           t2 tag-choices
           t3 tag-choices
           t4 tag-choices]
@@ -516,7 +517,8 @@
           t2 tag-choices
           t3 tag-choices]
       [t1 t2 t3])
-    (for [t1 tag-choices
+    ;; Uncomment for more extensive arity-4 tests
+    #_(for [t1 tag-choices
           t2 tag-choices
           t3 tag-choices
           t4 tag-choices]
