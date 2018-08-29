@@ -436,14 +436,22 @@
                 (= (infer-if-ref test-tag then-tag else-tag) (infer-if-act test-tag then-tag else-tag)))) tagss)
     ;; If failing, use this instead for more insight
     (every? :same (for [[test-tag then-tag else-tag] tagss]
+                    (if (= else-tag ::no-else)
+                      (let [ref (infer-if-ref test-tag then-tag)
+                            act (infer-if-act test-tag then-tag)]
+                        {:test-tag test-tag
+                         :then-tag then-tag
+                         :ref      ref
+                         :act      act
+                         :same     (= ref act)})
                       (let [ref (infer-if-ref test-tag then-tag else-tag)
                             act (infer-if-act test-tag then-tag else-tag)]
                         {:test-tag test-tag
                          :then-tag then-tag
                          :else-tag else-tag
-                         :ref  ref
-                         :act  act
-                         :same (= ref act)})))
+                         :ref      ref
+                         :act      act
+                         :same     (= ref act)}))))
     #_(for [test-tag tag-choices
           then-tag tag-choices]
       [test-tag then-tag ::no-else])
