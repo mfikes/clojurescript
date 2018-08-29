@@ -430,21 +430,21 @@
 
 (deftest infer-if-test
   (are [tagss]
-    (every? (fn [[test-tag then-tag else-tag]]
+    #_(every? (fn [[test-tag then-tag else-tag]]
               (if (= else-tag ::no-else)
                 (= (infer-if-ref test-tag then-tag) (infer-if-act test-tag then-tag))
                 (= (infer-if-ref test-tag then-tag else-tag) (infer-if-act test-tag then-tag else-tag)))) tagss)
     ;; If failing, use this instead for more insight
-    #_(every? :same (for [tags tagss]
-                      (let [ref (infer-or-ref tags)
-                            act (infer-or-act tags)
-                            act2 (a/infer-or tags)]
-                        {:tags tags
+    (every? :same (for [[test-tag then-tag else-tag] tagss]
+                      (let [ref (infer-if-ref test-tag then-tag else-tag)
+                            act (infer-if-act test-tag then-tag else-tag)]
+                        {:test-tag test-tag
+                         :then-tag then-tag
+                         :else-tag else-tag
                          :ref  ref
                          :act  act
-                         :act2 act2
-                         :same (= ref act act2)})))
-    (for [test-tag tag-choices
+                         :same (= ref act)})))
+    #_(for [test-tag tag-choices
           then-tag tag-choices]
       [test-tag then-tag ::no-else])
     (for [test-tag tag-choices
