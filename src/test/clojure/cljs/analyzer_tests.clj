@@ -435,30 +435,31 @@
   [tags]
   (infer-act 'and tags))
 
-;; Tests for if/and/or inference, exhaustively connsidering all interesting tags
+;; Tests for if/and/or inference, exhaustively considering all interesting tags
 ;; and ensuring that the actual (production) inference algorithms match the
 ;; simpler brute force reference implementation of the inference algorithms.
 
 (deftest infer-if-test
   (are [tagss]
-    (empty? (remove nil? (for [[test-tag then-tag else-tag] tagss]
-                           (if (= else-tag ::no-else)
-                             (let [ref (infer-if-ref test-tag then-tag)
-                                   act (infer-if-act test-tag then-tag)]
-                               (when (not= ref act)
-                                 {:test-tag test-tag
-                                  :then-tag then-tag
-                                  :else-tag else-tag
-                                  :ref      ref
-                                  :act      act}))
-                             (let [ref (infer-if-ref test-tag then-tag else-tag)
-                                   act (infer-if-act test-tag then-tag else-tag)]
-                               (when (not= ref act)
-                                 {:test-tag test-tag
-                                  :then-tag then-tag
-                                  :else-tag else-tag
-                                  :ref      ref
-                                  :act      act}))))))
+    (empty? (remove nil? (pmap (fn [[test-tag then-tag else-tag]]
+                                 (if (= else-tag ::no-else)
+                                   (let [ref (infer-if-ref test-tag then-tag)
+                                         act (infer-if-act test-tag then-tag)]
+                                     (when (not= ref act)
+                                       {:test-tag test-tag
+                                        :then-tag then-tag
+                                        :else-tag else-tag
+                                        :ref      ref
+                                        :act      act}))
+                                   (let [ref (infer-if-ref test-tag then-tag else-tag)
+                                         act (infer-if-act test-tag then-tag else-tag)]
+                                     (when (not= ref act)
+                                       {:test-tag test-tag
+                                        :then-tag then-tag
+                                        :else-tag else-tag
+                                        :ref      ref
+                                        :act      act}))))
+                           tagss)))
     (for [test-tag tag-choices
           then-tag tag-choices]
       [test-tag then-tag ::no-else])
@@ -469,15 +470,16 @@
 
 (deftest infer-and-test
   (are [tagss]
-    (empty? (remove nil? (for [tags tagss]
-                           (let [ref  (infer-and-ref tags)
-                                 act1 (infer-and-act tags)
-                                 act2 (a/infer-and tags)]
-                             (when (not= ref act1 act2)
-                               {:tags tags
-                                :ref  ref
-                                :act1 act1
-                                :act2 act2})))))
+    (empty? (remove nil? (pmap (fn [tags]
+                                 (let [ref  (infer-and-ref tags)
+                                       act1 (infer-and-act tags)
+                                       act2 (a/infer-and tags)]
+                                   (when (not= ref act1 act2)
+                                     {:tags tags
+                                      :ref  ref
+                                      :act  act1
+                                      :act2 act2})))
+                           tagss)))
     (for [t1 tag-choices]
       [t1])
     (for [t1 tag-choices
@@ -495,15 +497,16 @@
 
 (deftest infer-or-test
   (are [tagss]
-    (empty? (remove nil? (for [tags tagss]
-                           (let [ref  (infer-or-ref tags)
-                                 act1 (infer-or-act tags)
-                                 act2 (a/infer-or tags)]
-                             (when (not= ref act1 act2)
-                               {:tags tags
-                                :ref  ref
-                                :act  act1
-                                :act2 act2})))))
+    (empty? (remove nil? (pmap (fn [tags]
+                                (let [ref  (infer-or-ref tags)
+                                      act1 (infer-or-act tags)
+                                      act2 (a/infer-or tags)]
+                                  (when (not= ref act1 act2)
+                                    {:tags tags
+                                     :ref  ref
+                                     :act  act1
+                                     :act2 act2})))
+                           tagss)))
     (for [t1 tag-choices]
       [t1])
     (for [t1 tag-choices
