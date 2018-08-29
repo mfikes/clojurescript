@@ -232,32 +232,23 @@
 (deftest basic-inference
   (is (= (inferred-tag '1)
          'number))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '"foo")))
+  (is (= (inferred-tag '"foo")
          'string))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '\a)))
+  (is (= (inferred-tag '\a)
         'string))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '(make-array 10))))
+  (is (= (inferred-tag '(make-array 10))
          'array))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '(js-obj))))
+  (is (= (inferred-tag '(js-obj))
          'object))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '[])))
+  (is (= (inferred-tag '[])
          'cljs.core/IVector))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '{})))
+  (is (= (inferred-tag '{})
          'cljs.core/IMap))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '#{})))
+  (is (= (inferred-tag '#{})
          'cljs.core/ISet))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env ())))
+  (is (= (inferred-tag ())
          'cljs.core/IList))
-  (is (= (e/with-compiler-env test-cenv
-           (:tag (a/analyze test-env '(fn [x] x))))
+  (is (= (inferred-tag '(fn [x] x))
          'function)))
 
 (deftest and-inference
