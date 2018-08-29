@@ -345,9 +345,10 @@
   "A reference implementation, inferring an if tag from test, then, and
   (optionally) else tags."
   ([test-tag then-tag]
-   (for [test (tag->values test-tag)
-         then (tag->values then-tag)]
-     (if test then)))
+   (results->tag
+     (for [test (tag->values test-tag)
+           then (tag->values then-tag)]
+       (if test then))))
   ([test-tag then-tag else-tag]
    (results->tag
      (for [test (tag->values test-tag)
