@@ -178,10 +178,10 @@
 ;; Tag utilty tests
 
 (deftest type-set-test
-  (is (= #{nil} (a/type-set nil)))
-  (is (= '#{any} (a/type-set 'any)))
-  (is (= '#{boolean} (a/type-set 'boolean)))
-  (is (= '#{boolean string} (a/type-set '#{boolean string}))))
+  (is (= #{nil} (a/->type-set nil)))
+  (is (= '#{any} (a/->type-set 'any)))
+  (is (= '#{boolean} (a/->type-set 'boolean)))
+  (is (= '#{boolean string} (a/->type-set '#{boolean string}))))
 
 (deftest canonicalize-type-test
   (is (nil? (a/canonicalize-type nil)))
@@ -323,7 +323,7 @@
                     string  ["a"]
                     seq     [nil '(10)]
                     any     [nil false true 10 a ::any]}]
-    (mapcat sym->vals (a/type-set tag))))
+    (mapcat sym->vals (a/->type-set tag))))
 
 (defn values->tag
   "Given a collection of values, produces a tag."

@@ -886,7 +886,7 @@
                  'prototype)})
     x))
 
-(defn type-set
+(defn ->type-set
   "Ensures that a type tag is a set."
   [t]
   (if #?(:clj  (set? t)
@@ -916,7 +916,7 @@
    (if (or (nil? t1)
            (nil? t2))
      'any
-     (-> (set/union (type-set t1) (type-set t2))
+     (-> (set/union (->type-set t1) (->type-set t2))
        canonicalize-type)))
   ([t1 t2 & ts]
    (apply add-types (add-types t1 t2) ts)))
@@ -929,7 +929,7 @@
            (= 'any t1)
            (= t1 t2))
      'any
-     (-> (set/difference (type-set t1) (type-set t2))
+     (-> (set/difference (->type-set t1) (->type-set t2))
        canonicalize-type)))
   ([t1 t2 & ts]
    (apply subtract-types (subtract-types t1 t2) ts)))
