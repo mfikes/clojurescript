@@ -1423,7 +1423,8 @@
              (not (nil? form))
              (not (false? form)))
       then-tag
-      (let [else-tag (infer-tag env (:else e))]
+      (let [test-tag (infer-tag env (:test e))
+            else-tag (infer-tag env (:else e))]
         (cond
           (or #?(:clj (= then-tag else-tag)
                  :cljs (symbol-identical? then-tag else-tag))
@@ -1456,6 +1457,12 @@
                 (if (empty? x)
                   then-tag
                   (add-types x then-tag)))))
+
+          (= 'clj-nil test-tag)
+          else-tag
+
+          (not (admits-falsey? test-tag))
+          then-tag
 
           :else
           (add-types then-tag else-tag))))))
