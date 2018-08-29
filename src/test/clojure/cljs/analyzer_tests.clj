@@ -272,10 +272,8 @@
                                      10)
     '#{clj-nil boolean number} '(let [x ^any []] (and x 10))
     '#{string number} '(let [x ^any []] (and :kw (if x "3" 10)))
-    'boolean '(loop [] (and (even? (int (system-time))) (recur))) ;; TODO confirm
     'clj-nil '(loop [] (and nil (recur)))
     'boolean '(and (even? (int (system-time))) (throw :x))
-    'boolean '(and (throw :x) (even? (int (system-time))))  ;; TODO confirm
     'clj-nil '(and nil (throw :x))
     '#{clj-nil number} '(and (seq []) 10)))
 
@@ -305,14 +303,14 @@
     'number '(or 10 (throw :x))
     '#{seq number} '(or (seq []) 10)))
 
-;; Reference implementations of infer-and and infer-or which work for a limited set of
-;; tags and values chosen to provide full coverage without loss of generality.
-;; This works by exhaustively generating values for the tags, passing them to the actual
-;; and / or macros, and forming tags from the set of values produced. The reference impls
-;; are essentially simple, brute-force ways to ascertain the types of and / or expressions
-;; involving certain tags, up to arithy 4 which should cover all interesting cases.
-;; We use a special ::any value to masquerade as any value outside of our limited set
-;; of types.
+;; Reference implementations that can infer the type of if/and/or expressions
+;; which work for a limited set of tags and values chosen to provide full
+;; coverage without loss of generality. This works by exhaustively generating
+;; values for the tags, passing them to if and the and / or macros, and forming
+;; tags from the set of values produced. The reference impls are essentially
+;; simple, brute-force ways to ascertain the types of if/and/or expressions
+;; involving certain tags. We use a special ::any value to masquerade as any
+;; value outside of our limited set of types.
 
 (defn tag->values
   "Given a tag, produce a collection of all interesting values for that tag."
@@ -376,28 +374,6 @@
               t (tag->values (nth tags 3))]
           (and x y z t)))))
 
-
-(defn tagged-local [tag]
-  (with-meta (gensym) {:tag tag}))
-
-(defn infer-act [op tags]
-  (let [form (list* op (map tagged-local tags))]
-    (inferred-tag form)))
-
-(defn infer-if-act
-  ([test-tag then-tag]
-   (infer-act 'if [test-tag then-tag]))
-  ([test-tag then-tag else-tag]
-   (infer-act 'if [test-tag then-tag else-tag])))
-
-(defn infer-or-act
-  [tags]
-  (infer-act 'or tags))
-
-(defn infer-and-act
-  [tags]
-  (infer-act 'and tags))
-
 (defn infer-or-ref
   "A reference implementation of infer-or."
   [tags]
@@ -429,6 +405,40 @@
     (a/canonicalize-type (or (not-empty (into x y))
                              'any))))
 
+;; Helpers for the actual (production) implementation of inference for if/and/or
+;; expressions.
+
+(defn tagged-local [tag]
+  (with-meta (gensym) {:tag tag}))
+
+(defn infer-act [op tags]
+  (let [form (list* op (map tagged-local tags))]
+    (inferred-tag form)))
+
+(defn infer-if-act
+  "Applies the actual production inference algorithm to an if expression
+  hinted with the supplied tags."
+  ([test-tag then-tag]
+   (infer-act 'if [test-tag then-tag]))
+  ([test-tag then-tag else-tag]
+   (infer-act 'if [test-tag then-tag else-tag])))
+
+(defn infer-or-act
+  "Applies the actual production inference algorithm to an or expression
+  hinted with the supplied tags."
+  [tags]
+  (infer-act 'or tags))
+
+(defn infer-and-act
+  "Applies the actual production inference algorithm to an and expression
+  hinted with the supplied tags."
+  [tags]
+  (infer-act 'and tags))
+
+;; Tests for if/and/or inference, exhaustively connsidering all interesting tags
+;; and ensuring that the actual (production) inference algorithms match the
+;; simpler brute force reference implementation of the inference algorithms.
+
 (deftest infer-if-test
   (are [tagss]
     (empty? (remove nil? (for [[test-tag then-tag else-tag] tagss]
@@ -459,46 +469,15 @@
 
 (deftest infer-and-test
   (are [tagss]
-    (every? (fn [tags] (= (infer-and-ref tags) (infer-and-act tags) (a/infer-and tags))) tagss)
-    ;; If failing, use this instead for more insight
-    #_(every? :same (for [tags tagss]
-                    (let [ref (infer-and-ref tags)
-                          act (infer-and-act tags)
-                          act2 (a/infer-and tags)]
-                      {:tags tags
-                       :ref  ref
-                       :act  act
-                       :act2 act2
-                       :same (= ref act act2)})))
-    (for [t1 tag-choices]
-      [t1])
-    (for [t1 tag-choices
-          t2 tag-choices]
-      [t1 t2])
-    (for [t1 tag-choices
-            t2 tag-choices
-            t3 tag-choices]
-        [t1 t2 t3])
-    ;; Uncomment for arity-4 test
-    #_(for [t1 tag-choices
-          t2 tag-choices
-          t3 tag-choices
-          t4 tag-choices]
-      [t1 t2 t3 t4])))
-
-(deftest infer-or-test
-  (are [tagss]
-    (every? (fn [tags] (= (infer-or-ref tags) (infer-or-act tags) (a/infer-or tags))) tagss)
-    ;; If failing, use this instead for more insight
-    #_(every? :same (for [tags tagss]
-                      (let [ref (infer-or-ref tags)
-                            act (infer-or-act tags)
-                            act2 (a/infer-or tags)]
-                        {:tags tags
-                         :ref  ref
-                         :act  act
-                         :act2 act2
-                         :same (= ref act act2)})))
+    (empty? (remove nil? (for [tags tagss]
+                           (let [ref  (infer-and-ref tags)
+                                 act1 (infer-and-act tags)
+                                 act2 (a/infer-and tags)]
+                             (when (not= ref act1 act2)
+                               {:tags tags
+                                :ref  ref
+                                :act1 act1
+                                :act2 act2})))))
     (for [t1 tag-choices]
       [t1])
     (for [t1 tag-choices
@@ -508,12 +487,37 @@
           t2 tag-choices
           t3 tag-choices]
       [t1 t2 t3])
-    ;; Uncomment for arity-4 test
-    #_(for [t1 tag-choices
-            t2 tag-choices
-            t3 tag-choices
-            t4 tag-choices]
-        [t1 t2 t3 t4])))
+    (for [t1 tag-choices
+          t2 tag-choices
+          t3 tag-choices
+          t4 tag-choices]
+      [t1 t2 t3 t4])))
+
+(deftest infer-or-test
+  (are [tagss]
+    (empty? (remove nil? (for [tags tagss]
+                           (let [ref  (infer-or-ref tags)
+                                 act1 (infer-or-act tags)
+                                 act2 (a/infer-or tags)]
+                             (when (not= ref act1 act2)
+                               {:tags tags
+                                :ref  ref
+                                :act  act1
+                                :act2 act2})))))
+    (for [t1 tag-choices]
+      [t1])
+    (for [t1 tag-choices
+          t2 tag-choices]
+      [t1 t2])
+    (for [t1 tag-choices
+          t2 tag-choices
+          t3 tag-choices]
+      [t1 t2 t3])
+    (for [t1 tag-choices
+          t2 tag-choices
+          t3 tag-choices
+          t4 tag-choices]
+      [t1 t2 t3 t4])))
 
 (deftest if-inference
   (is (= (inferred-tag '(if x "foo" 1)))

@@ -1377,9 +1377,8 @@
           (contains? t 'js)))))
 
 (defn- admits-nil? [t]
-  (or
-   (admits? t 'clj-nil)
-   (admits? t 'seq)))
+  (or (admits? t 'clj-nil)
+      (admits? t 'seq)))
 
 (defn- admits-false? [t]
   (admits? t 'boolean))
