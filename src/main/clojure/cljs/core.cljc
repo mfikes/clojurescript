@@ -844,8 +844,11 @@
                             (apply core/str))]
      (list* 'js* (core/str "[" strs "].join('')") x ys))))
 
+(core/defn- type-expr [tag e]
+  (vary-meta e assoc :tag tag))
+
 (core/defn- bool-expr [e]
-  (vary-meta e assoc :tag 'boolean))
+  (type-expr 'boolean e))
 
 (core/defn- simple-test-expr? [env ast]
   (core/and
@@ -860,14 +863,15 @@
   ([] true)
   ([x] x)
   ([x & next]
-   (core/let [forms (concat [x] next)]
-     (if (every? #(simple-test-expr? &env %)
-           (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms))
+   (core/let [forms (concat [x] next)
+              analyzed-forms (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms)]
+     (if (every? #(simple-test-expr? &env %) analyzed-forms)
        (core/let [and-str (core/->> (repeat (count forms) "(~{})")
                             (interpose " && ")
                             (#(concat ["("] % [")"]))
                             (apply core/str))]
-         (bool-expr `(~'js* ~and-str ~@forms)))
+         (type-expr (cljs.analyzer/infer-and (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))
+           `(~'js* ~and-str ~@forms)))
        `(let [and# ~x]
           (if and# (and ~@next) and#))))))
 
@@ -879,14 +883,15 @@
   ([] nil)
   ([x] x)
   ([x & next]
-   (core/let [forms (concat [x] next)]
-     (if (every? #(simple-test-expr? &env %)
-           (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms))
+   (core/let [forms (concat [x] next)
+              analyzed-forms (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms)]
+     (if (every? #(simple-test-expr? &env %) analyzed-forms)
        (core/let [or-str (core/->> (repeat (count forms) "(~{})")
                            (interpose " || ")
                            (#(concat ["("] % [")"]))
                            (apply core/str))]
-         (bool-expr `(~'js* ~or-str ~@forms)))
+         (type-expr (cljs.analyzer/infer-or (map #(cljs.analyzer/infer-tag &env %) analyzed-forms))
+           `(~'js* ~or-str ~@forms)))
        `(let [or# ~x]
           (if or# or# (or ~@next)))))))
 
