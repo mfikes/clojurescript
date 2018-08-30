@@ -625,9 +625,14 @@
         (and (some? const-expr)
              (falsey-constant? const-expr)))))
 
+(defn- power-set [s]
+  (reduce (fn [p e] (into p (map #(conj % e) p))) #{#{}} s))
+
+(def safe-types (into #{} (map ana/canonicalize-type (disj (power-set '#{boolean seq}) #{}))))
+
 (defn safe-test? [env e]
   (let [tag (ana/infer-tag env e)]
-    (or (#{'boolean 'seq} tag) (truthy-constant? e))))
+    (or (safe-types tag) (truthy-constant? e))))
 
 (defmethod emit* :if
   [{:keys [test then else env unchecked]}]
