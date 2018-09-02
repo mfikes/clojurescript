@@ -399,12 +399,12 @@
 
 (defn emit-constants-comma-sep [cs]
   (fn []
-    (doall
-      (map-indexed (fn [i m]
-                     (if (even? i)
-                       (emit-constant m)
-                       (emits m)))
-                   (comma-sep cs)))))
+    (loop [started false cs cs]
+      (when (seq cs)
+        (when started
+          (emits ","))
+        (emit-constant (first cs))
+        (recur true (rest cs))))))
 
 (def ^:private array-map-threshold 8)
 
