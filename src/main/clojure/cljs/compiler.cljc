@@ -181,7 +181,7 @@
     (let [{:keys [env]} ast]
       (when (:line env)
         (let [{:keys [line column]} env]
-          (swap! *source-map-data*
+          (vswap! *source-map-data*
             (fn [m]
               (let [minfo (cond-> {:gcol (:gen-col m)
                                    :gline (:gen-line m)}
@@ -207,7 +207,7 @@
      #?(:clj (fn? a) :cljs ^boolean (goog/isFunction a)) (a)
      :else (let [^String s (cond-> a (not (string? a)) .toString)]
              (when-not (nil? *source-map-data*)
-               (swap! *source-map-data*
+               (vswap! *source-map-data*
                  update-in [:gen-col] #(+ % (count s))))
              #?(:clj  (.write ^Writer *out* s)
                 :cljs (print s))))
@@ -227,7 +227,7 @@
 (defn ^:private _emitln []
   (newline)
   (when *source-map-data*
-    (swap! *source-map-data*
+    (vswap! *source-map-data*
       (fn [{:keys [gen-line] :as m}]
         (assoc m
           :gen-line (inc gen-line)
@@ -1496,7 +1496,7 @@
                  ana/*checked-arrays*  (or ana/*checked-arrays* (:checked-arrays opts))
                  ana/*cljs-static-fns* (or ana/*cljs-static-fns* (:static-fns opts))
                  *source-map-data*     (when (:source-map opts)
-                                         (atom
+                                         (volatile!
                                            {:source-map (sorted-map)
                                             :gen-col 0
                                             :gen-line 0}))
