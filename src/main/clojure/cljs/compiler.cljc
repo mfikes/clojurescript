@@ -210,7 +210,7 @@
                (swap! *source-map-data*
                  update-in [:gen-col] #(+ % (count s))))
              #?(:clj  (.write ^Writer *out* s)
-                :cljs (print s))))
+                :cljs (*print-fn* s))))
     nil)
   ([a b]
    (emits a) (emits b))
