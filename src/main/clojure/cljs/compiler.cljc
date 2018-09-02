@@ -1061,13 +1061,11 @@
     (when (= :expr context) (emits "(function (){"))
     (binding [*lexical-renames*
               (into *lexical-renames*
+                (map (fn [binding]
+                       [(hash-scope binding)
+                        (gensym (str (:name binding) "-"))]))
                 (when (= :statement context)
-                  (map
-                    (fn [binding]
-                      (let [name (:name binding)]
-                        (vector (hash-scope binding)
-                          (gensym (str name "-")))))
-                    bindings)))]
+                  bindings))]
       (doseq [{:keys [init] :as binding} bindings]
         (emits "var ")
         (emit binding) ; Binding will be treated as a var
