@@ -34,6 +34,8 @@
                    [cljs.tagged_literals JSValue])
      :cljs (:import [goog.string StringBuffer])))
 
+(defrecord SourceMapData [source-map gen-col gen-line])
+
 #?(:clj (set! *warn-on-reflection* true))
 
 (def js-reserved ana/js-reserved)
@@ -208,7 +210,7 @@
      :else (let [^String s (cond-> a (not (string? a)) .toString)]
              (when-not (nil? *source-map-data*)
                (swap! *source-map-data*
-                 update-in [:gen-col] #(+ % (count s))))
+                 update :gen-col + (count s)))
              #?(:clj  (.write ^Writer *out* s)
                 :cljs (print s))))
     nil)
@@ -1496,10 +1498,7 @@
                  ana/*checked-arrays*  (or ana/*checked-arrays* (:checked-arrays opts))
                  ana/*cljs-static-fns* (or ana/*cljs-static-fns* (:static-fns opts))
                  *source-map-data*     (when (:source-map opts)
-                                         (atom
-                                           {:source-map (sorted-map)
-                                            :gen-col 0
-                                            :gen-line 0}))
+                                         (atom (->SourceMapData (sorted-map) 0 0)))
                  find-ns-starts-with   (memoize find-ns-starts-with)]
          (emitln (compiled-by-string opts))
          (with-open [rdr (io/reader src)]
