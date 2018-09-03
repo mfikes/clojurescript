@@ -177,24 +177,28 @@
 (defmulti emit* :op)
 
 (defn emit [ast]
-  (when *source-map-data*
+  (when-some [source-map-data *source-map-data*]
     (let [{:keys [env]} ast]
-      (when (:line env)
-        (let [{:keys [line column]} env]
-          (swap! *source-map-data*
-            (fn [m]
-              (let [minfo (cond-> {:gcol (:gen-col m)
-                                   :gline (:gen-line m)}
-                            (#{:var :local :js-var} (:op ast))
-                            (assoc :name (str (-> ast :info :name))))]
-                ; Dec the line/column numbers for 0-indexing.
-                ; tools.reader uses 1-indexed sources, chrome
-                ; expects 0-indexed source maps.
-                (update-in m [:source-map (dec line)]
-                  (fnil (fn [line]
-                          (update-in line [(if column (dec column) 0)]
-                            (fnil (fn [column] (conj column minfo)) [])))
-                    (sorted-map))))))))))
+      (when-some [line (:line env)]
+        (swap! source-map-data
+          (fn [m]
+            (let [minfo (cond-> {:gcol  (:gen-col m)
+                                 :gline (:gen-line m)}
+                          (#{:var :local :js-var} (:op ast))
+                          (assoc :name (name (-> ast :info :name))))]
+              ; Dec the line/column numbers for 0-indexing.
+              ; tools.reader uses 1-indexed sources, chrome
+              ; expects 0-indexed source maps.
+              (update-in m [:source-map (dec line)]
+                (fn [line]
+                  (update (or line (sorted-map))
+                    (if-some [column (:column env)]
+                      (dec column)
+                      0)
+                    (fn [column]
+                      (if column
+                        (conj column minfo)
+                        [minfo])))))))))))
   (emit* ast))
 
 (defn emits 
@@ -206,9 +210,8 @@
      #?(:clj (seq? a) :cljs (ana/cljs-seq? a)) (apply emits a)
      #?(:clj (fn? a) :cljs ^boolean (goog/isFunction a)) (a)
      :else (let [^String s (cond-> a (not (string? a)) .toString)]
-             (when-not (nil? *source-map-data*)
-               (swap! *source-map-data*
-                 update-in [:gen-col] #(+ % (count s))))
+             (when-some [source-map-data *source-map-data*]
+               (swap! source-map-data update :gen-col + (count s)))
              #?(:clj  (.write ^Writer *out* s)
                 :cljs (print s))))
     nil)
