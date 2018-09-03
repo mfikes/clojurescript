@@ -529,7 +529,7 @@
            ;; TODO: check opts as well - David
            (if (:source-map repl-env)
              (binding [comp/*source-map-data*
-                       (atom {:source-map (sorted-map)
+                       (atom {:source-map {}
                               :gen-col 0
                               :gen-line 0})]
                (let [js (comp/emit-str ast)

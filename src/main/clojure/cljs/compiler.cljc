@@ -191,7 +191,7 @@
               ; expects 0-indexed source maps.
               (update-in m [:source-map (dec line)]
                 (fn [line]
-                  (update (or line (sorted-map))
+                  (update (or line {})
                     (if-some [column (:column env)]
                       (dec column)
                       0)
@@ -1490,6 +1490,10 @@
                        (util/ns->relpath (first (:provides opts)) (:ext opts))}})))))
 
 #?(:clj
+   (defn convert-to-sorted-maps [source-map-data]
+     (update source-map-data :source-map #(into (sorted-map) (map (fn [[k v]] [k (into (sorted-map) v)])) %))))
+
+#?(:clj
    (defn emit-source [src dest ext opts]
      (with-open [out ^java.io.Writer (io/make-writer dest {})]
        (binding [*out*                 out
@@ -1500,7 +1504,7 @@
                  ana/*cljs-static-fns* (or ana/*cljs-static-fns* (:static-fns opts))
                  *source-map-data*     (when (:source-map opts)
                                          (atom
-                                           {:source-map (sorted-map)
+                                           {:source-map {}
                                             :gen-col 0
                                             :gen-line 0}))
                  find-ns-starts-with   (memoize find-ns-starts-with)]
@@ -1541,7 +1545,7 @@
                                 :name ns-name}))
                        (emit ast)
                        (recur (rest forms) ns-name deps))))
-                 (let [sm-data (when *source-map-data* @*source-map-data*)
+                 (let [sm-data (when *source-map-data* (convert-to-sorted-maps @*source-map-data*))
                        ret (merge
                              {:ns         (or ns-name 'cljs.user)
                               :macros-ns  (:macros-ns opts)
