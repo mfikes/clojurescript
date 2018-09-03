@@ -184,17 +184,17 @@
    Each vector represents a line, and the internal vectors are segments
    representing the contents of the line."
   [lines]
-  (let [relseg (atom [0 0 0 0 0])]
+  (let [relseg (volatile! [0 0 0 0 0])]
     (reduce
       (fn [segs cols]
-        (swap! relseg
+        (vswap! relseg
           (fn [[_ source line col name]]
             [0 source line col name]))
         (conj segs
           (reduce
             (fn [cols [gcol sidx line col name :as seg]]
               (let [offset (map - seg @relseg)]
-                (swap! relseg
+                (vswap! relseg
                   (fn [[_ _ _ _ lname]]
                     [gcol sidx line col (or name lname)]))
                 (conj cols (base64-vlq/encode offset))))
@@ -224,9 +224,9 @@
   "Take an internal source map representation represented as nested
    sorted maps of file, line, column and return a v3 representation."
   [m opts]
-  (let [lines (atom [[]])
-        names->idx (atom {})
-        name-idx (atom 0)
+  (let [lines (volatile! [[]])
+        names->idx (volatile! {})
+        name-idx (volatile! 0)
         preamble-lines (take (or (:preamble-line-count opts) 0) (repeat []))
         info->segv
         (fn [info source-idx line col]
@@ -235,8 +235,8 @@
               (let [idx (if-let [idx (get @names->idx name)]
                           idx
                           (let [cidx @name-idx]
-                            (swap! names->idx assoc name cidx)
-                            (swap! name-idx inc)
+                            (vswap! names->idx assoc name cidx)
+                            (vswap! name-idx inc)
                             cidx))]
                 (conj segv idx))
               segv)))
@@ -247,10 +247,10 @@
                   gline (:gline info)
                   lc (count @lines)]
               (if (> gline (dec lc))
-                (swap! lines
+                (vswap! lines
                   (fn [lines]
                     (conj (into lines (repeat (dec (- gline (dec lc))) [])) [segv])))
-                (swap! lines
+                (vswap! lines
                   (fn [lines]
                     (update-in lines [gline] conj segv)))))))]
     (doseq [[source-idx [_ lines]] (map-indexed (fn [i v] [i v]) m)]
@@ -332,11 +332,11 @@
   "Given a ClojureScript to JavaScript source map, invert it. Useful when
    mapping JavaScript stack traces when environment support is unavailable."
   [reverse-map]
-  (let [inverted (atom (sorted-map))]
+  (let [inverted (volatile! (sorted-map))]
     (doseq [[line columns] reverse-map]
       (doseq [[column column-info] columns]
         (doseq [{:keys [gline gcol name]} column-info]
-          (swap! inverted update-in [gline]
+          (vswap! inverted update-in [gline]
             (fnil (fn [columns]
                     (update-in columns [column] (fnil conj [])
                       {:line line :col column :name name}))
