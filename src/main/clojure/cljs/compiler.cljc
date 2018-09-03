@@ -339,7 +339,7 @@
    (defmethod emit-constant* BigDecimal [x] (emits (.doubleValue ^BigDecimal x))))
 
 #?(:clj
-   (defmethod emit-constant* clojure.lang.BigInt [x] (emits (.doubleValue ^clojure.lang.BigInt x))))
+   (defmethod emit-constant* clojure.lang.BigInt [x] (emits (str x "n"))))
 
 (defmethod emit-constant* #?(:clj String :cljs js/String) [x]
   (emits (wrap-in-double-quotes (escape-string x))))

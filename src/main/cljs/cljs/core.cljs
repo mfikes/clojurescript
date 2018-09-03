@@ -2372,6 +2372,14 @@ reduces them without incurring seq initialization"
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Seq fns ;;;;;;;;;;;;;;;;
 
+(declare bigint?)
+
+(defn- less-than-compare [x y]
+  (cond
+    (< x y) -1
+    (< y x) 1
+    :else 0))
+
 (defn ^number compare
   "Comparator. Returns a negative number, zero, or a positive number
   when x is logically 'less than', 'equal to', or 'greater than'
@@ -2385,9 +2393,15 @@ reduces them without incurring seq initialization"
 
    (nil? y) 1
 
-   (number? x) (if (number? y)
-                 (garray/defaultCompare x y)
-                 (throw (js/Error. (str "Cannot compare " x " to " y))))
+   (number? x) (cond
+                 (number? y) (garray/defaultCompare x y)
+                 (bigint? y) (less-than-compare x y)
+                 :else (throw (js/Error. (str "Cannot compare " x " to " y))))
+
+   (bigint? x) (cond
+                 (bigint? y) (less-than-compare x y)
+                 (number? y) (less-than-compare x y)
+                 :else (throw (js/Error. (str "Cannot compare " x " to " y))))
 
    (satisfies? IComparable x)
    (-compare x y)
@@ -2789,9 +2803,10 @@ reduces them without incurring seq initialization"
   ([x y & more] (reduce unchecked-subtract-int (cljs.core/unchecked-subtract-int x y) more)))
 
 (defn- ^number fix [q]
-  (if (>= q 0)
-    (Math/floor q)
-    (Math/ceil q)))
+  (cond
+    (bigint? q) q
+    (>= q 0) (Math/floor q)
+    :else (Math/ceil q)))
 
 (defn int
   "Coerce to int by stripping decimal places."
@@ -2821,6 +2836,19 @@ reduces them without incurring seq initialization"
 (defn floats [x] x)
 (defn doubles [x] x)
 (defn longs [x] x)
+
+(defn- bigint? [x]
+  (identical? (type x) js/BigInt))
+
+(defn bigint
+  "Coerce to BigInt"
+  [x]
+  (cond
+    (bigint? x) x
+    (number? x) (js/BigInt x)
+    (instance? goog.math.Integer x) (js/BigInt (str x))
+    (instance? goog.math.Long x) (js/BigInt (str x))
+    :else (js/BigInt x)))
 
 (defn js-mod
   "Modulus of num and div with original javascript behavior. i.e. bug for negative numbers"
@@ -10433,6 +10461,13 @@ reduces them without incurring seq initialization"
   (-pr-writer [a writer opts]
     (-write writer "#'")
     (pr-writer (.-sym a) writer opts)))
+
+(if (and (exists? js/BigInt)
+         (identical? (goog/typeOf js/BigInt) "function"))
+  (extend-protocol IPrintWithWriter
+    js/BigInt
+    (-pr-writer [n writer opts]
+      (-write writer (str n "N")))))
 
 ;; IComparable
 (extend-protocol IComparable
