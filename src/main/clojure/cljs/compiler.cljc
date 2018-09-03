@@ -229,8 +229,8 @@
 
 (defn ^:private _emitln []
   (newline)
-  (when *source-map-data*
-    (swap! *source-map-data*
+  (when-some [source-map-data *source-map-data*]
+    (swap! source-map-data
       (fn [{:keys [gen-line] :as m}]
         (assoc m
           :gen-line (inc gen-line)
