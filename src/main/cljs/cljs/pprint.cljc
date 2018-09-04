@@ -121,8 +121,10 @@
 (defmacro ^{:private true}
   defdirectives
   [& directives]
-  `(def ^{:private true}
-        ~'directive-table (hash-map ~@(mapcat process-directive-table-element directives))))
+  `(defn- ~'lookup-directive [directive#]
+     (case directive#
+       ~@(mapcat process-directive-table-element directives)
+       nil)))
 
 (defmacro formatter
   "Makes a function which can directly run format-in. The function is
