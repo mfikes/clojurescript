@@ -719,7 +719,24 @@ radix specifier is in the form #XXr where XX is the decimal value of *print-base
   [base-writer right-margin miser-width]
   (pretty-writer base-writer right-margin miser-width))
 
-(declare simple-dispatch)
+(declare simple-dispatch simple-dispatch-default)
+(declare code-dispatch code-dispatch-default)
+
+(defn- print-pprint-dispatch []
+  (if-some [dispatch *print-pprint-dispatch*]
+    (cond
+      (identical? dispatch simple-dispatch)
+      (if (empty? (methods simple-dispatch))
+        simple-dispatch-default
+        simple-dispatch)
+
+      (identical? dispatch code-dispatch)
+      (if (empty? (methods code-dispatch))
+        code-dispatch-default
+        code-dispatch)
+
+      :else dispatch)
+    simple-dispatch-default))
 
 (defn write-out
   "Write an object to *out* subject to the current bindings of the printer control
@@ -742,7 +759,7 @@ Normal library clients should use the standard \"write\" interface. "
         (-write *out* "...") ;;TODO could this (incorrectly) print ... on the next line?
         (do
           (if *current-length* (set! *current-length* (inc *current-length*)))
-          ((or *print-pprint-dispatch* simple-dispatch) object))))
+          ((print-pprint-dispatch) object))))
     length-reached))
 
 (defn write
@@ -2902,20 +2919,20 @@ type-map {"core$future_call" "Future",
     (nil? obj) nil
     :default :default))
 
-#_(defmulti simple-dispatch
+(defmulti simple-dispatch
   "The pretty print dispatch function for simple data structure format."
   type-dispatcher)
 
-(defn simple-dispatch [obj]
+(defn simple-dispatch-default [obj]
   (let [dispatch-val (type-dispatcher obj)]
-    ((or #_(get-method simple-dispatch dispatch-val)
-         (case dispatch-val
-           :list pprint-list
-           :vector pprint-vector
-           :map pprint-map
-           :set pprint-set
-           nil #(-write *out* (pr-str nil))
-           pprint-simple-default))
+    ((or (get-method simple-dispatch dispatch-val)
+      (case dispatch-val
+        :list pprint-list
+        :vector pprint-vector
+        :map pprint-map
+        :set pprint-set
+        nil #(-write *out* (pr-str nil))
+        pprint-simple-default))
      obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -3207,15 +3224,15 @@ type-map {"core$future_call" "Future",
       (print (name sym))
       (pr sym))))
 
-#_(defmulti
+(defmulti
   code-dispatch
   "The pretty print dispatch function for pretty printing Clojure code."
   {:added "1.2" :arglists '[[object]]}
   type-dispatcher)
 
-(defn code-dispatch [obj]
+(defn code-dispatch-default [obj]
   (let [dispatch-val (type-dispatcher obj)]
-    ((or #_(get-method code-dispatch dispatch-val)
+    ((or (get-method code-dispatch dispatch-val)
          (case dispatch-val
            :list pprint-code-list
            :symbol pprint-code-symbol
