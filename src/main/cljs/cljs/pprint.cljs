@@ -3181,8 +3181,10 @@ type-map {"core$future_call" "Future",
                %))
         amap))))
 
-(def ^:dynamic ^{:private true} *code-table*
-  #_(two-forms
+(def ^:dynamic ^{:private true} *code-table* nil)
+
+(defn default-code-table [obj]
+  ((two-forms
     (add-core-ns
       {'def pprint-hold-first, 'defonce pprint-hold-first,
        'defn pprint-defn, 'defn- pprint-defn, 'defmacro pprint-defn, 'fn pprint-defn,
@@ -3196,11 +3198,11 @@ type-map {"core$future_call" "Future",
        '. pprint-hold-first, '.. pprint-hold-first, '-> pprint-hold-first,
        'locking pprint-hold-first, 'struct pprint-hold-first,
        'struct-map pprint-hold-first, 'ns pprint-ns
-       })))
+       })) obj))
 
 (defn- pprint-code-list [alis]
   (if-not (pprint-reader-macro alis)
-    (if-let [special-form (*code-table* (first alis))]
+    (if-let [special-form ((or *code-table* default-code-table) (first alis))]
       (special-form alis)
       (pprint-simple-code-list alis))))
 
