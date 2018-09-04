@@ -263,41 +263,44 @@ beginning of aseq"
 
 (declare emit-nl)
 
-(defmulti ^{:private true} write-token #(:type-tag %2))
+(defn- write-token [this token]
+  (case (:type-tag token)
+    :start-block-t
+    (do
+      (when-let [cb (getf :logical-block-callback)] (cb :start))
+      (let [lb (:logical-block token)]
+        (when-let [prefix (:prefix lb)]
+          (-write (getf :base) prefix))
+        (let [col (get-column (getf :base))]
+          (reset! (:start-col lb) col)
+          (reset! (:indent lb) col))))
 
-(defmethod write-token :start-block-t [this token]
-  (when-let [cb (getf :logical-block-callback)] (cb :start))
-  (let [lb (:logical-block token)]
-    (when-let [prefix (:prefix lb)]
-      (-write (getf :base) prefix))
-    (let [col (get-column (getf :base))]
-      (reset! (:start-col lb) col)
-      (reset! (:indent lb) col))))
+    :end-block-t
+    (do
+      (when-let [cb (getf :logical-block-callback)] (cb :end))
+      (when-let [suffix (:suffix (:logical-block token))]
+        (-write (getf :base) suffix)))
 
-(defmethod write-token :end-block-t [this token]
-  (when-let [cb (getf :logical-block-callback)] (cb :end))
-  (when-let [suffix (:suffix (:logical-block token))]
-    (-write (getf :base) suffix)))
+    :indent-t
+    (let [lb (:logical-block token)]
+      (reset! (:indent lb)
+        (+ (:offset token)
+           (condp = (:relative-to token)
+             :block @(:start-col lb)
+             :current (get-column (getf :base))))))
 
-(defmethod write-token :indent-t [this token]
-  (let [lb (:logical-block token)]
-    (reset! (:indent lb)
-            (+ (:offset token)
-               (condp = (:relative-to token)
-                 :block @(:start-col lb)
-                 :current (get-column (getf :base)))))))
+    :buffer-blob
+    (-write (getf :base) (:data token))
 
-(defmethod write-token :buffer-blob [this token]
-  (-write (getf :base) (:data token)))
-
-(defmethod write-token :nl-t [this token]
-  (if (or (= (:type token) :mandatory)
-          (and (not (= (:type token) :fill))
-               @(:done-nl (:logical-block token))))
-    (emit-nl this token)
-    (if-let [tws (getf :trailing-white-space)]
-      (-write (getf :base) tws)))
-  (setf :trailing-white-space nil))
+    :nl-t
+    (do
+      (if (or (= (:type token) :mandatory)
+              (and (not (= (:type token) :fill))
+                   @(:done-nl (:logical-block token))))
+        (emit-nl this token)
+        (if-let [tws (getf :trailing-white-space)]
+          (-write (getf :base) tws)))
+      (setf :trailing-white-space nil))))
 
 (defn- write-tokens [this tokens force-trailing-whitespace]
   (doseq [token tokens]
@@ -333,24 +336,17 @@ beginning of aseq"
          (>= @(:start-col lb) (- maxcol miser-width))
          (linear-nl? this lb section))))
 
-(defmulti ^{:private true} emit-nl? (fn [t _ _ _] (:type t)))
-
-(defmethod emit-nl? :linear [newl this section _]
-  (let [lb (:logical-block newl)]
-    (linear-nl? this lb section)))
-
-(defmethod emit-nl? :miser [newl this section _]
-  (let [lb (:logical-block newl)]
-    (miser-nl? this lb section)))
-
-(defmethod emit-nl? :fill [newl this section subsection]
-  (let [lb (:logical-block newl)]
-    (or @(:intra-block-nl lb)
-        (not (tokens-fit? this subsection))
-        (miser-nl? this lb section))))
-
-(defmethod emit-nl? :mandatory [_ _ _ _]
-  true)
+(defn- emit-nl? [newl this section subsection]
+  (case (:type newl)
+    :linear (let [lb (:logical-block newl)]
+              (linear-nl? this lb section))
+    :miser (let [lb (:logical-block newl)]
+             (miser-nl? this lb section))
+    :fill (let [lb (:logical-block newl)]
+            (or @(:intra-block-nl lb)
+                (not (tokens-fit? this subsection))
+                (miser-nl? this lb section)))
+    :mandatory true))
 
 ;;======================================================================
 ;; Various support functions
@@ -724,6 +720,17 @@ radix specifier is in the form #XXr where XX is the decimal value of *print-base
   [base-writer right-margin miser-width]
   (pretty-writer base-writer right-margin miser-width))
 
+(declare simple-dispatch simple-dispatch-default)
+(declare code-dispatch code-dispatch-default)
+
+(defn- print-pprint-dispatch []
+  (if-some [dispatch *print-pprint-dispatch*]
+    (condp identical? dispatch
+      simple-dispatch simple-dispatch-default
+      code-dispatch code-dispatch-default
+      :else dispatch)
+    simple-dispatch-default))
+
 (defn write-out
   "Write an object to *out* subject to the current bindings of the printer control
 variables. Use the kw-args argument to override individual variables for this call (and
@@ -745,7 +752,7 @@ Normal library clients should use the standard \"write\" interface. "
         (-write *out* "...") ;;TODO could this (incorrectly) print ... on the next line?
         (do
           (if *current-length* (set! *current-length* (inc *current-length*)))
-          (*print-pprint-dispatch* object))))
+          ((print-pprint-dispatch) object))))
     length-reached))
 
 (defn write
@@ -2546,7 +2553,7 @@ of parameters as well."
   (let [[raw-params [rest offset]] (extract-params s offset)
         [_ [rest offset flags]] (extract-flags rest offset)
         directive (first rest)
-        def (get directive-table (string/upper-case directive))
+        def (lookup-directive (string/upper-case directive))
         params (if def (map-params def (map translate-param raw-params) flags offset))]
     (if (not directive)
       (format-error "Format string ended in the middle of a directive" offset))
@@ -2761,11 +2768,6 @@ column number or pretty printing"
 ;; dispatch.clj
 ;;======================================================================
 
-(defn- use-method
-  "Installs a function as a new method of multimethod associated with dispatch-value. "
-  [multifn dispatch-val func]
-  (-add-method multifn dispatch-val func))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Implementations of specific dispatch table entries
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -2836,7 +2838,8 @@ column number or pretty printing"
           (pprint-newline :linear)
           (recur (next aseq)))))))
 
-(def ^{:private true} pprint-array (formatter-out "~<[~;~@{~w~^, ~:_~}~;]~:>"))
+(defn- pprint-array [x]
+  ((formatter-out "~<[~;~@{~w~^, ~:_~}~;]~:>") x))
 
 ;;; (def pprint-map (formatter-out "~<{~;~@{~<~w~^ ~_~w~:>~^, ~_~}~;}~:>"))
 (defn- pprint-map [amap]
@@ -2864,7 +2867,8 @@ column number or pretty printing"
   ;;TODO: Update to handle arrays (?) and suppressing namespaces
   (-write *out* (pr-str obj)))
 
-(def pprint-set (formatter-out "~<#{~;~@{~w~^ ~:_~}~;}~:>"))
+(defn pprint-set [x]
+  ((formatter-out "~<#{~;~@{~w~^ ~:_~}~;}~:>") x))
 
 (def ^{:private true}
 type-map {"core$future_call" "Future",
@@ -2888,7 +2892,8 @@ type-map {"core$future_call" "Future",
           :not-delivered
           @o)))))
 
-(def ^{:private true} pprint-pqueue (formatter-out "~<<-(~;~@{~w~^ ~_~}~;)-<~:>"))
+(defn- pprint-pqueue [x]
+  ((formatter-out "~<<-(~;~@{~w~^ ~_~}~;)-<~:>") x))
 
 (defn- type-dispatcher [obj]
   (cond
@@ -2906,14 +2911,19 @@ type-map {"core$future_call" "Future",
   "The pretty print dispatch function for simple data structure format."
   type-dispatcher)
 
-(use-method simple-dispatch :list pprint-list)
-(use-method simple-dispatch :vector pprint-vector)
-(use-method simple-dispatch :map pprint-map)
-(use-method simple-dispatch :set pprint-set)
-(use-method simple-dispatch nil #(-write *out* (pr-str nil)))
-(use-method simple-dispatch :default pprint-simple-default)
-
-(set-pprint-dispatch simple-dispatch)
+(defn- simple-dispatch-default [obj]
+  (let [dispatch-val (type-dispatcher obj)]
+    ((if-some [method (get-method simple-dispatch dispatch-val)]
+       method
+       (if (nil? dispatch-val)
+         (fn [_] (-write *out* (pr-str nil)))
+         (case dispatch-val
+           :list pprint-list
+           :vector pprint-vector
+           :map pprint-map
+           :set pprint-set
+           pprint-simple-default)))
+     obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Dispatch for the code table
@@ -2999,7 +3009,8 @@ type-map {"core$future_call" "Future",
 ;;; won't give it to us now).
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^{:private true} pprint-hold-first (formatter-out "~:<~w~^ ~@_~w~^ ~_~@{~w~^ ~_~}~:>"))
+(defn- pprint-hold-first [x]
+  ((formatter-out "~:<~w~^ ~@_~w~^ ~_~@{~w~^ ~_~}~:>") x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Format something that looks like a defn or defmacro
@@ -3075,7 +3086,8 @@ type-map {"core$future_call" "Future",
 ;;; Format something that looks like "if"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^{:private true} pprint-if (formatter-out "~:<~1I~w~^ ~@_~w~@{ ~_~w~}~:>"))
+(defn- pprint-if [x]
+  ((formatter-out "~:<~1I~w~^ ~@_~w~@{ ~_~w~}~:>") x))
 
 (defn- pprint-cond [alis]
   (pprint-logical-block :prefix "(" :suffix ")"
@@ -3170,8 +3182,10 @@ type-map {"core$future_call" "Future",
                %))
         amap))))
 
-(def ^:dynamic ^{:private true} *code-table*
-  (two-forms
+(def ^:dynamic ^{:private true} *code-table* nil)
+
+(defn- default-code-table [obj]
+  ((two-forms
     (add-core-ns
       {'def pprint-hold-first, 'defonce pprint-hold-first,
        'defn pprint-defn, 'defn- pprint-defn, 'defmacro pprint-defn, 'fn pprint-defn,
@@ -3185,11 +3199,11 @@ type-map {"core$future_call" "Future",
        '. pprint-hold-first, '.. pprint-hold-first, '-> pprint-hold-first,
        'locking pprint-hold-first, 'struct pprint-hold-first,
        'struct-map pprint-hold-first, 'ns pprint-ns
-       })))
+       })) obj))
 
 (defn- pprint-code-list [alis]
   (if-not (pprint-reader-macro alis)
-    (if-let [special-form (*code-table* (first alis))]
+    (if-let [special-form ((or *code-table* default-code-table) (first alis))]
       (special-form alis)
       (pprint-simple-code-list alis))))
 
@@ -3206,19 +3220,22 @@ type-map {"core$future_call" "Future",
   {:added "1.2" :arglists '[[object]]}
   type-dispatcher)
 
-(use-method code-dispatch :list pprint-code-list)
-(use-method code-dispatch :symbol pprint-code-symbol)
-
-;; The following are all exact copies of simple-dispatch
-(use-method code-dispatch :vector pprint-vector)
-(use-method code-dispatch :map pprint-map)
-(use-method code-dispatch :set pprint-set)
-(use-method code-dispatch :queue pprint-pqueue)
-(use-method code-dispatch :deref pprint-ideref)
-(use-method code-dispatch nil pr)
-(use-method code-dispatch :default pprint-simple-default)
-
-(set-pprint-dispatch simple-dispatch)
+(defn- code-dispatch-default [obj]
+  (let [dispatch-val (type-dispatcher obj)]
+    ((if-some [method (get-method code-dispatch dispatch-val)]
+       method
+       (if (nil? dispatch-val)
+         pr
+         (case dispatch-val
+           :list pprint-code-list
+           :symbol pprint-code-symbol
+           :vector pprint-vector
+           :map pprint-map
+           :set pprint-set
+           :queue pprint-pqueue
+           :deref pprint-ideref
+           pprint-simple-default)))
+     obj)))
 
 ;;; For testing
 (comment
