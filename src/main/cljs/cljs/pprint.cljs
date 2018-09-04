@@ -2775,11 +2775,6 @@ column number or pretty printing"
 ;; dispatch.clj
 ;;======================================================================
 
-(defn- use-method
-  "Installs a function as a new method of multimethod associated with dispatch-value. "
-  [multifn dispatch-val func]
-  (-add-method multifn dispatch-val func))
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;; Implementations of specific dispatch table entries
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
