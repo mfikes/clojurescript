@@ -2545,7 +2545,7 @@ of parameters as well."
   (let [[raw-params [rest offset]] (extract-params s offset)
         [_ [rest offset flags]] (extract-flags rest offset)
         directive (first rest)
-        def (get directive-table (string/upper-case directive))
+        def (lookup-directive (string/upper-case directive))
         params (if def (map-params def (map translate-param raw-params) flags offset))]
     (if (not directive)
       (format-error "Format string ended in the middle of a directive" offset))
