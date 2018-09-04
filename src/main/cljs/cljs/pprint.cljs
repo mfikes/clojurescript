@@ -262,41 +262,44 @@ beginning of aseq"
 
 (declare emit-nl)
 
-(defmulti ^{:private true} write-token #(:type-tag %2))
+(defn- write-token [this token]
+  (case (:type-tag token)
+    :start-block-t
+    (do
+      (when-let [cb (getf :logical-block-callback)] (cb :start))
+      (let [lb (:logical-block token)]
+        (when-let [prefix (:prefix lb)]
+          (-write (getf :base) prefix))
+        (let [col (get-column (getf :base))]
+          (reset! (:start-col lb) col)
+          (reset! (:indent lb) col))))
 
-(defmethod write-token :start-block-t [this token]
-  (when-let [cb (getf :logical-block-callback)] (cb :start))
-  (let [lb (:logical-block token)]
-    (when-let [prefix (:prefix lb)]
-      (-write (getf :base) prefix))
-    (let [col (get-column (getf :base))]
-      (reset! (:start-col lb) col)
-      (reset! (:indent lb) col))))
+    :end-block-t
+    (do
+      (when-let [cb (getf :logical-block-callback)] (cb :end))
+      (when-let [suffix (:suffix (:logical-block token))]
+        (-write (getf :base) suffix)))
 
-(defmethod write-token :end-block-t [this token]
-  (when-let [cb (getf :logical-block-callback)] (cb :end))
-  (when-let [suffix (:suffix (:logical-block token))]
-    (-write (getf :base) suffix)))
+    :indent-t
+    (let [lb (:logical-block token)]
+      (reset! (:indent lb)
+        (+ (:offset token)
+           (condp = (:relative-to token)
+             :block @(:start-col lb)
+             :current (get-column (getf :base))))))
 
-(defmethod write-token :indent-t [this token]
-  (let [lb (:logical-block token)]
-    (reset! (:indent lb)
-            (+ (:offset token)
-               (condp = (:relative-to token)
-                 :block @(:start-col lb)
-                 :current (get-column (getf :base)))))))
+    :buffer-blob
+    (-write (getf :base) (:data token))
 
-(defmethod write-token :buffer-blob [this token]
-  (-write (getf :base) (:data token)))
-
-(defmethod write-token :nl-t [this token]
-  (if (or (= (:type token) :mandatory)
-          (and (not (= (:type token) :fill))
-               @(:done-nl (:logical-block token))))
-    (emit-nl this token)
-    (if-let [tws (getf :trailing-white-space)]
-      (-write (getf :base) tws)))
-  (setf :trailing-white-space nil))
+    :nl-t
+    (do
+      (if (or (= (:type token) :mandatory)
+              (and (not (= (:type token) :fill))
+                   @(:done-nl (:logical-block token))))
+        (emit-nl this token)
+        (if-let [tws (getf :trailing-white-space)]
+          (-write (getf :base) tws)))
+      (setf :trailing-white-space nil))))
 
 (defn- write-tokens [this tokens force-trailing-whitespace]
   (doseq [token tokens]
@@ -332,24 +335,17 @@ beginning of aseq"
          (>= @(:start-col lb) (- maxcol miser-width))
          (linear-nl? this lb section))))
 
-(defmulti ^{:private true} emit-nl? (fn [t _ _ _] (:type t)))
-
-(defmethod emit-nl? :linear [newl this section _]
-  (let [lb (:logical-block newl)]
-    (linear-nl? this lb section)))
-
-(defmethod emit-nl? :miser [newl this section _]
-  (let [lb (:logical-block newl)]
-    (miser-nl? this lb section)))
-
-(defmethod emit-nl? :fill [newl this section subsection]
-  (let [lb (:logical-block newl)]
-    (or @(:intra-block-nl lb)
-        (not (tokens-fit? this subsection))
-        (miser-nl? this lb section))))
-
-(defmethod emit-nl? :mandatory [_ _ _ _]
-  true)
+(defn- emit-nl? [newl this section subsection]
+  (case (:type newl)
+    :linear (let [lb (:logical-block newl)]
+              (linear-nl? this lb section))
+    :miser (let [lb (:logical-block newl)]
+             (miser-nl? this lb section))
+    :fill (let [lb (:logical-block newl)]
+            (or @(:intra-block-nl lb)
+                (not (tokens-fit? this subsection))
+                (miser-nl? this lb section)))
+    :mandatory true))
 
 ;;======================================================================
 ;; Various support functions
