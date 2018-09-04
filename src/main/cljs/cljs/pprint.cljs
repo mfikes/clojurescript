@@ -622,6 +622,10 @@ set-pprint-dispatch to modify."
    :added "1.2"}
  *print-pprint-dispatch* nil)
 
+(declare simple-dispatch')
+(defn- print-pprint-dispatch []
+  (or *print-pprint-dispatch* simple-dispatch'))
+
 (def ^:dynamic
  ^{:doc "Pretty printing will try to avoid anything going beyond this column.
 Set it to nil to have pprint let the line be arbitrarily long. This will ignore all
@@ -744,7 +748,7 @@ Normal library clients should use the standard \"write\" interface. "
         (-write *out* "...") ;;TODO could this (incorrectly) print ... on the next line?
         (do
           (if *current-length* (set! *current-length* (inc *current-length*)))
-          (*print-pprint-dispatch* object))))
+          ((print-pprint-dispatch) object))))
     length-reached))
 
 (defn write
@@ -2835,7 +2839,8 @@ column number or pretty printing"
           (pprint-newline :linear)
           (recur (next aseq)))))))
 
-(def ^{:private true} pprint-array (formatter-out "~<[~;~@{~w~^, ~:_~}~;]~:>"))
+(defn- pprint-array [x]
+  ((formatter-out "~<[~;~@{~w~^, ~:_~}~;]~:>") x))
 
 ;;; (def pprint-map (formatter-out "~<{~;~@{~<~w~^ ~_~w~:>~^, ~_~}~;}~:>"))
 (defn- pprint-map [amap]
@@ -2863,7 +2868,8 @@ column number or pretty printing"
   ;;TODO: Update to handle arrays (?) and suppressing namespaces
   (-write *out* (pr-str obj)))
 
-(def pprint-set (formatter-out "~<#{~;~@{~w~^ ~:_~}~;}~:>"))
+(defn pprint-set [x]
+  ((formatter-out "~<#{~;~@{~w~^ ~:_~}~;}~:>") x))
 
 (def ^{:private true}
 type-map {"core$future_call" "Future",
@@ -2887,7 +2893,8 @@ type-map {"core$future_call" "Future",
           :not-delivered
           @o)))))
 
-(def ^{:private true} pprint-pqueue (formatter-out "~<<-(~;~@{~w~^ ~_~}~;)-<~:>"))
+(defn- pprint-pqueue [x]
+  ((formatter-out "~<<-(~;~@{~w~^ ~_~}~;)-<~:>") x))
 
 (defn- type-dispatcher [obj]
   (cond
@@ -2905,14 +2912,17 @@ type-map {"core$future_call" "Future",
   "The pretty print dispatch function for simple data structure format."
   type-dispatcher)
 
-(use-method simple-dispatch :list pprint-list)
-(use-method simple-dispatch :vector pprint-vector)
-(use-method simple-dispatch :map pprint-map)
-(use-method simple-dispatch :set pprint-set)
-(use-method simple-dispatch nil #(-write *out* (pr-str nil)))
-(use-method simple-dispatch :default pprint-simple-default)
-
-(set-pprint-dispatch simple-dispatch)
+(defn- simple-dispatch' [obj]
+  (let [dispatch-val (type-dispatcher obj)]
+    ((or (get-method simple-dispatch dispatch-val)
+         (case dispatch-val
+           :list pprint-list
+           :vector pprint-vector
+           :map pprint-map
+           :set pprint-set
+           nil #(-write *out* (pr-str nil))
+           pprint-simple-default))
+     obj)))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Dispatch for the code table
@@ -2998,7 +3008,8 @@ type-map {"core$future_call" "Future",
 ;;; won't give it to us now).
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^{:private true} pprint-hold-first (formatter-out "~:<~w~^ ~@_~w~^ ~_~@{~w~^ ~_~}~:>"))
+(defn- pprint-hold-first [x]
+  ((formatter-out "~:<~w~^ ~@_~w~^ ~_~@{~w~^ ~_~}~:>") x))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;; Format something that looks like a defn or defmacro
@@ -3074,7 +3085,8 @@ type-map {"core$future_call" "Future",
 ;;; Format something that looks like "if"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(def ^{:private true} pprint-if (formatter-out "~:<~1I~w~^ ~@_~w~@{ ~_~w~}~:>"))
+(defn- pprint-if [x]
+  ((formatter-out "~:<~1I~w~^ ~@_~w~@{ ~_~w~}~:>") x))
 
 (defn- pprint-cond [alis]
   (pprint-logical-block :prefix "(" :suffix ")"
@@ -3170,7 +3182,7 @@ type-map {"core$future_call" "Future",
         amap))))
 
 (def ^:dynamic ^{:private true} *code-table*
-  (two-forms
+  #_(two-forms
     (add-core-ns
       {'def pprint-hold-first, 'defonce pprint-hold-first,
        'defn pprint-defn, 'defn- pprint-defn, 'defmacro pprint-defn, 'fn pprint-defn,
@@ -3205,19 +3217,20 @@ type-map {"core$future_call" "Future",
   {:added "1.2" :arglists '[[object]]}
   type-dispatcher)
 
-(use-method code-dispatch :list pprint-code-list)
-(use-method code-dispatch :symbol pprint-code-symbol)
-
-;; The following are all exact copies of simple-dispatch
-(use-method code-dispatch :vector pprint-vector)
-(use-method code-dispatch :map pprint-map)
-(use-method code-dispatch :set pprint-set)
-(use-method code-dispatch :queue pprint-pqueue)
-(use-method code-dispatch :deref pprint-ideref)
-(use-method code-dispatch nil pr)
-(use-method code-dispatch :default pprint-simple-default)
-
-(set-pprint-dispatch simple-dispatch)
+(defn code-dispatch' [obj]
+  (let [dispatch-val (type-dispatcher obj)]
+    ((or (get-method code-dispatch dispatch-val)
+         (case dispatch-val
+           :list pprint-code-list
+           :symbol pprint-code-symbol
+           :vector pprint-vector
+           :map pprint-map
+           :set pprint-set
+           :queue pprint-pqueue
+           :deref pprint-ideref
+           nil pr
+           pprint-simple-default))
+     obj)))
 
 ;;; For testing
 (comment
