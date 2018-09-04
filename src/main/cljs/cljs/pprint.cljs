@@ -622,10 +622,6 @@ set-pprint-dispatch to modify."
    :added "1.2"}
  *print-pprint-dispatch* nil)
 
-(declare simple-dispatch')
-(defn- print-pprint-dispatch []
-  (or *print-pprint-dispatch* simple-dispatch'))
-
 (def ^:dynamic
  ^{:doc "Pretty printing will try to avoid anything going beyond this column.
 Set it to nil to have pprint let the line be arbitrarily long. This will ignore all
@@ -727,6 +723,8 @@ radix specifier is in the form #XXr where XX is the decimal value of *print-base
   [base-writer right-margin miser-width]
   (pretty-writer base-writer right-margin miser-width))
 
+(declare simple-dispatch')
+
 (defn write-out
   "Write an object to *out* subject to the current bindings of the printer control
 variables. Use the kw-args argument to override individual variables for this call (and
@@ -748,7 +746,7 @@ Normal library clients should use the standard \"write\" interface. "
         (-write *out* "...") ;;TODO could this (incorrectly) print ... on the next line?
         (do
           (if *current-length* (set! *current-length* (inc *current-length*)))
-          ((print-pprint-dispatch) object))))
+          ((or *print-pprint-dispatch* simple-dispatch') object))))
     length-reached))
 
 (defn write
