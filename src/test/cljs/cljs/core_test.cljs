@@ -1625,3 +1625,11 @@
   (is (false? ((comp not empty?) "")))
   (is (thrown? js/Error ((not empty?) "foo")))
   (is (thrown? js/Error ((not empty?) ""))))
+
+(deftest test-cljs-2886
+  (is (zero? (count "")))
+  (is (== 1 (count "a")))
+  (is (zero? (count #js [])))
+  (is (== 1 (count #js [1])))
+  (is (zero? (count [])))
+  (is (== 1 (count [1]))))

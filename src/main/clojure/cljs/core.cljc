@@ -8,7 +8,7 @@
 
 (ns cljs.core
   (:refer-clojure :exclude [-> ->> .. amap and areduce alength aclone assert assert-args binding bound-fn case comment
-                            cond condp declare definline definterface defmethod defmulti defn defn- defonce
+                            cond condp count declare definline definterface defmethod defmulti defn defn- defonce
                             defprotocol defrecord defstruct deftype delay destructure doseq dosync dotimes doto
                             extend-protocol extend-type fn for future gen-class gen-interface
                             if-let if-not import io! lazy-cat lazy-seq let letfn locking loop
@@ -309,7 +309,7 @@
                                   pre (:pre conds)
                                   post (:post conds)
                                   body (if post
-                                         `((let [~'% ~(if (core/< 1 (count body))
+                                         `((let [~'% ~(if (core/< 1 (core/count body))
                                                         `(do ~@body)
                                                         (first body))]
                                              ~@(map (fn* [c] `(assert ~c)) post)
@@ -345,7 +345,7 @@
       (assert-args if-let
         (vector? bindings) "a vector for its binding"
         (empty? oldform) "1 or 2 forms after binding vector"
-        (= 2 (count bindings)) "exactly 2 forms in binding vector")
+        (= 2 (core/count bindings)) "exactly 2 forms in binding vector")
       (core/let [form (bindings 0) tst (bindings 1)]
         `(let [temp# ~tst]
            (if temp#
@@ -400,7 +400,7 @@
      [bindings & body]
      (assert-args when-first
        (vector? bindings) "a vector for its binding"
-       (= 2 (count bindings)) "exactly 2 forms in binding vector")
+       (= 2 (core/count bindings)) "exactly 2 forms in binding vector")
      (core/let [[x xs] bindings]
        `(when-let [xs# (seq ~xs)]
           (let [~x (first xs#)]
@@ -414,7 +414,7 @@
      [bindings & body]
      (assert-args when-let
        (vector? bindings) "a vector for its binding"
-       (= 2 (count bindings)) "exactly 2 forms in binding vector")
+       (= 2 (core/count bindings)) "exactly 2 forms in binding vector")
      (core/let [form (bindings 0) tst (bindings 1)]
        `(let [temp# ~tst]
           (when temp#
@@ -444,7 +444,7 @@
      expression is true. Note that, unlike cond branching, cond-> threading does
      not short circuit after the first true test expression."
      [expr & clauses]
-     (core/assert (even? (count clauses)))
+     (core/assert (even? (core/count clauses)))
      (core/let [g (gensym)
                 steps (map (core/fn [[test step]] `(if ~test (-> ~g ~step) ~g))
                         (partition 2 clauses))]
@@ -461,7 +461,7 @@
      is true.  Note that, unlike cond branching, cond->> threading does not short circuit
      after the first true test expression."
      [expr & clauses]
-     (core/assert (even? (count clauses)))
+     (core/assert (even? (core/count clauses)))
      (core/let [g (gensym)
                 steps (map (core/fn [[test step]] `(if ~test (->> ~g ~step) ~g))
                         (partition 2 clauses))]
@@ -523,7 +523,7 @@
       (assert-args if-some
         (vector? bindings) "a vector for its binding"
         (empty? oldform) "1 or 2 forms after binding vector"
-        (= 2 (count bindings)) "exactly 2 forms in binding vector")
+        (= 2 (core/count bindings)) "exactly 2 forms in binding vector")
       (core/let [form (bindings 0) tst (bindings 1)]
         `(let [temp# ~tst]
            (if (nil? temp#)
@@ -540,7 +540,7 @@
      [bindings & body]
      (assert-args when-some
        (vector? bindings) "a vector for its binding"
-       (= 2 (count bindings)) "exactly 2 forms in binding vector")
+       (= 2 (core/count bindings)) "exactly 2 forms in binding vector")
      (core/let [form (bindings 0) tst (bindings 1)]
        `(let [temp# ~tst]
           (if (nil? temp#)
@@ -599,7 +599,7 @@
                             arglist (if #?(:clj (clojure.lang.Util/equals '&form (first arglist))
                                            :cljs (= '&form (first arglist)))
                                       #?(:clj (clojure.lang.RT/subvec arglist 2 (clojure.lang.RT/count arglist))
-                                         :cljs (subvec arglist 2 (count arglist)))
+                                         :cljs (subvec arglist 2 (core/count arglist)))
                                       arglist)
                             body (next fdecl)]
                    (if (map? (first body))
@@ -774,7 +774,7 @@
   [bindings & body]
   (assert-args let
      (vector? bindings) "a vector for its binding"
-     (even? (count bindings)) "an even number of forms in binding vector")
+     (even? (core/count bindings)) "an even number of forms in binding vector")
   `(let* ~(destructure bindings) ~@body))
 
 (core/defmacro loop
@@ -784,7 +784,7 @@
   [bindings & body]
   (assert-args loop
     (vector? bindings) "a vector for its binding"
-    (even? (count bindings)) "an even number of forms in binding vector")
+    (even? (core/count bindings)) "an even number of forms in binding vector")
   (core/let [db (destructure bindings)]
     (if (= db bindings)
       `(loop* ~bindings ~@body)
@@ -821,11 +821,21 @@
 
 (def fast-path-protocol-partitions-count
   "total number of partitions"
-  (core/let [c (count fast-path-protocols)
+  (core/let [c (core/count fast-path-protocols)
              m (core/mod c 32)]
     (if (core/zero? m)
       (core/quot c 32)
       (core/inc (core/quot c 32)))))
+
+(core/defn- compatible? [inferred-tag allowed-tags]
+  (if (set? inferred-tag)
+    (clojure.set/subset? inferred-tag allowed-tags)
+    (contains? allowed-tags inferred-tag)))
+
+(core/defn- typed-expr? [env form allowed-tags]
+  (compatible? (cljs.analyzer/infer-tag env
+                 (cljs.analyzer/no-warn (cljs.analyzer/analyze env form)))
+    allowed-tags))
 
 (core/defmacro str [& xs]
   (core/let [interpolate (core/fn [x]
@@ -857,7 +867,7 @@
    (core/let [forms (concat [x] next)]
      (if (every? #(simple-test-expr? &env %)
            (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms))
-       (core/let [and-str (core/->> (repeat (count forms) "(~{})")
+       (core/let [and-str (core/->> (repeat (core/count forms) "(~{})")
                             (interpose " && ")
                             (#(concat ["("] % [")"]))
                             (apply core/str))]
@@ -876,7 +886,7 @@
    (core/let [forms (concat [x] next)]
      (if (every? #(simple-test-expr? &env %)
            (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms))
-       (core/let [or-str (core/->> (repeat (count forms) "(~{})")
+       (core/let [or-str (core/->> (repeat (core/count forms) "(~{})")
                            (interpose " || ")
                            (#(concat ["("] % [")"]))
                            (apply core/str))]
@@ -966,7 +976,7 @@
     (core/let [x     (core/cond-> (:name (cljs.analyzer/resolve-var &env x))
                        (= "js" (namespace x)) name)
                segs  (string/split (core/str (string/replace (core/str x) "/" ".")) #"\.")
-               n     (count segs)
+               n     (core/count segs)
                syms  (map
                        #(vary-meta (symbol "js" (string/join "." %))
                           assoc :cljs.analyzer/no-resolve true)
@@ -1011,7 +1021,7 @@
    (core/case (ana/checked-arrays)
      :warn `(checked-aget ~array ~idx ~@idxs)
      :error `(checked-aget' ~array ~idx ~@idxs)
-     (core/let [astr (apply core/str (repeat (count idxs) "[~{}]"))]
+     (core/let [astr (apply core/str (repeat (core/count idxs) "[~{}]"))]
        `(~'js* ~(core/str "(~{}[~{}]" astr ")") ~array ~idx ~@idxs)))))
 
 (core/defmacro aset
@@ -1024,7 +1034,7 @@
    (core/case (ana/checked-arrays)
      :warn `(checked-aset ~array ~idx ~idx2 ~@idxv)
      :error `(checked-aset' ~array ~idx ~idx2 ~@idxv)
-     (core/let [n    (core/dec (count idxv))
+     (core/let [n    (core/dec (core/count idxv))
                 astr (apply core/str (repeat n "[~{}]"))]
        `(~'js* ~(core/str "(~{}[~{}][~{}]" astr " = ~{})") ~array ~idx ~idx2 ~@idxv)))))
 
@@ -1227,6 +1237,12 @@
 
 (core/defmacro ^::ana/numeric bit-set [x n]
   (core/list 'js* "(~{} | (1 << ~{}))" x n))
+
+(core/defmacro ^::ana/numeric count [coll]
+  (core/condp (core/fn [t coll] (typed-expr? &env coll #{t})) coll
+    'string `(.-length ~coll)
+    'array `(alength ~coll)
+    `(^::ana/no-expand cljs.core/count ~coll)))
 
 ;; internal
 (core/defmacro mask [hash shift]
@@ -1474,7 +1490,7 @@
 (core/defn- ifn-invoke-methods [type type-sym [f & meths :as form]]
   (map
     (core/fn [meth]
-      (core/let [arity (count (first meth))]
+      (core/let [arity (core/count (first meth))]
         `(set! ~(extend-prefix type-sym (symbol (core/str "cljs$core$IFn$_invoke$arity$" arity)))
            ~(with-meta `(fn ~meth) (meta form)))))
     (map #(adapt-ifn-invoke-params type %) meths)))
@@ -1499,10 +1515,10 @@
     (if (vector? (first meths))
       ;; single method case
       (core/let [meth meths]
-        [`(set! ~(extend-prefix type-sym (core/str pf "$arity$" (count (first meth))))
+        [`(set! ~(extend-prefix type-sym (core/str pf "$arity$" (core/count (first meth))))
             ~(with-meta `(fn ~@(adapt-proto-params type meth)) (meta form)))])
       (map (core/fn [[sig & body :as meth]]
-             `(set! ~(extend-prefix type-sym (core/str pf "$arity$" (count sig)))
+             `(set! ~(extend-prefix type-sym (core/str pf "$arity$" (core/count sig)))
                 ~(with-meta `(fn ~(adapt-proto-params type meth)) (meta form))))
         meths))))
 
@@ -1544,12 +1560,12 @@
       (core/loop [sigs sigs seen #{}]
         (core/when (seq sigs)
           (core/let [sig (first sigs)
-                     c   (count sig)]
+                     c   (core/count sig)]
             (core/when (contains? seen c)
               (ana/warning :protocol-duped-method env {:protocol p :fname fname}))
             (core/when (some '#{&} sig)
               (ana/warning :protocol-impl-with-variadic-method env {:protocol p :name fname}))
-            (core/when (core/and (not= decmeths ::not-found) (not (some #{c} (map count decmeths))))
+            (core/when (core/and (not= decmeths ::not-found) (not (some #{c} (map core/count decmeths))))
               (ana/warning :protocol-invalid-method env {:protocol p :fname fname :invalid-arity c}))
             (recur (next sigs) (conj seen c))))))))
 
@@ -1829,7 +1845,7 @@
                              ~@(mapcat (core/fn [f] [(keyword f) f]) base-fields)
                              (cljs.core/get ~'__extmap ~ksym else#)))
                         'ICounted
-                        `(~'-count [this#] (+ ~(count base-fields) (count ~'__extmap)))
+                        `(~'-count [this#] (+ ~(core/count base-fields) (core/count ~'__extmap)))
                         'ICollection
                         `(~'-conj [this# entry#]
                            (if (vector? entry#)
@@ -1856,7 +1872,7 @@
 
                         'IIterable
                         `(~'-iterator [~gs]
-                          (RecordIter. 0 ~gs ~(count base-fields) [~@(map keyword base-fields)] (if ~'__extmap
+                          (RecordIter. 0 ~gs ~(core/count base-fields) [~@(map keyword base-fields)] (if ~'__extmap
                                                                                                   (-iterator ~'__extmap)
                                                                                                   (core/nil-iter))))
 
@@ -2010,7 +2026,7 @@
              fqn (core/fn [n] (symbol (core/str ns-name "." n)))
              prefix (protocol-prefix p)
              _ (core/doseq [[mname & arities] methods]
-                 (core/when (some #{0} (map count (filter vector? arities)))
+                 (core/when (some #{0} (map core/count (filter vector? arities)))
                    (throw
                      #?(:clj (Exception.
                                (core/str "Invalid protocol, " psym
@@ -2068,7 +2084,7 @@
                         `(defn ~fname
                            ~@(map (core/fn [sig]
                                     (expand-sig fname
-                                      (symbol (core/str slot "$arity$" (count sig)))
+                                      (symbol (core/str slot "$arity$" (core/count sig)))
                                       sig))
                                sigs))))]
     `(do
@@ -2212,7 +2228,7 @@
              emit (core/fn emit [pred expr args]
                     (core/let [[[a b c :as clause] more]
                                (split-at (if (= :>> (second args)) 3 2) args)
-                               n (count clause)]
+                               n (core/count clause)]
                       (core/cond
                         (= 0 n) `(throw (js/Error. (cljs.core/str "No matching clause: " ~expr)))
                         (= 1 n) a
@@ -2274,7 +2290,7 @@
   test-constants need not be all of the same type."
   [e & clauses]
   (core/let [esym    (gensym)
-             default (if (odd? (count clauses))
+             default (if (odd? (core/count clauses))
                        (last clauses)
                        `(throw
                           (js/Error.
@@ -2299,13 +2315,13 @@
              tests   (keys pairs)]
     (core/cond
       (every? (some-fn core/number? core/string? #?(:clj core/char? :cljs (core/fnil core/char? :nonchar)) #(const? env %)) tests)
-      (core/let [no-default (if (odd? (count clauses)) (butlast clauses) clauses)
+      (core/let [no-default (if (odd? (core/count clauses)) (butlast clauses) clauses)
                  tests      (mapv #(if (seq? %) (vec %) [%]) (take-nth 2 no-default))
                  thens      (vec (take-nth 2 (drop 1 no-default)))]
         `(let [~esym ~e] (case* ~esym ~tests ~thens ~default)))
 
       (every? core/keyword? tests)
-      (core/let [no-default (if (odd? (count clauses)) (butlast clauses) clauses)
+      (core/let [no-default (if (odd? (core/count clauses)) (butlast clauses) clauses)
                  kw-str #(.substring (core/str %) 1)
                  tests (mapv #(if (seq? %) (mapv kw-str %) [(kw-str %)]) (take-nth 2 no-default))
                  thens (vec (take-nth 2 (drop 1 no-default)))]
@@ -2349,7 +2365,7 @@
   [seq-exprs body-expr]
   (assert-args for
     (vector? seq-exprs) "a vector for its binding"
-    (even? (count seq-exprs)) "an even number of forms in binding vector")
+    (even? (core/count seq-exprs)) "an even number of forms in binding vector")
   (core/let [to-groups (core/fn [seq-exprs]
                          (reduce (core/fn [groups [k v]]
                                    (if (core/keyword? k)
@@ -2430,7 +2446,7 @@
   [seq-exprs & body]
   (assert-args doseq
     (vector? seq-exprs) "a vector for its binding"
-    (even? (count seq-exprs)) "an even number of forms in binding vector")
+    (even? (core/count seq-exprs)) "an even number of forms in binding vector")
   (core/let [err (core/fn [& msg] (throw (ex-info (apply core/str msg) {})))
              step (core/fn step [recform exprs]
                     (core/if-not exprs
@@ -2481,7 +2497,7 @@
 
 (core/defmacro array [& rest]
   (core/let [xs-str (core/->> (repeat "~{}")
-                      (take (count rest))
+                      (take (core/count rest))
                       (interpose ",")
                       (apply core/str))]
     (vary-meta
@@ -2512,13 +2528,13 @@
   ([x]
    `(cljs.core/List. nil ~x nil 1 nil))
   ([x & xs]
-   (core/let [cnt (core/inc (count xs))]
+   (core/let [cnt (core/inc (core/count xs))]
      `(cljs.core/List. nil ~x (list ~@xs) ~cnt nil))))
 
 (core/defmacro vector
   ([] '(.-EMPTY cljs.core/PersistentVector))
   ([& xs]
-   (core/let [cnt (count xs)]
+   (core/let [cnt (core/count xs)]
      (if (core/< cnt 32)
        `(cljs.core/PersistentVector. nil ~cnt 5
           (.-EMPTY-NODE cljs.core/PersistentVector) (array ~@xs) nil)
@@ -2532,8 +2548,8 @@
    (core/let [keys (map first (partition 2 kvs))]
      (if (core/and (every? #(= (:op (cljs.analyzer/unwrap-quote %)) :const)
                      (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) keys))
-           (= (count (into #{} keys)) (count keys)))
-       `(cljs.core/PersistentArrayMap. nil ~(clojure.core// (count kvs) 2) (array ~@kvs) nil)
+           (= (core/count (into #{} keys)) (core/count keys)))
+       `(cljs.core/PersistentArrayMap. nil ~(clojure.core// (core/count kvs) 2) (array ~@kvs) nil)
        `(.createAsIfByAssoc cljs.core/PersistentArrayMap (array ~@kvs))))))
 
 (core/defmacro hash-map
@@ -2549,12 +2565,12 @@
 (core/defmacro hash-set
   ([] `(.-EMPTY cljs.core/PersistentHashSet))
   ([& xs]
-    (if (core/and (core/<= (count xs) 8)
+    (if (core/and (core/<= (core/count xs) 8)
                   (every? #(= (:op (cljs.analyzer/unwrap-quote %)) :const)
                     (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) xs))
-                  (= (count (into #{} xs)) (count xs)))
+                  (= (core/count (into #{} xs)) (core/count xs)))
       `(cljs.core/PersistentHashSet. nil
-         (cljs.core/PersistentArrayMap. nil ~(count xs) (array ~@(interleave xs (repeat nil))) nil)
+         (cljs.core/PersistentArrayMap. nil ~(core/count xs) (array ~@(interleave xs (repeat nil))) nil)
          nil)
       (vary-meta
         `(.createAsIfByAssoc cljs.core/PersistentHashSet (array ~@xs))
@@ -2562,7 +2578,7 @@
 
 (core/defn- js-obj* [kvs]
   (core/let [kvs-str (core/->> (repeat "~{}:~{}")
-                       (take (count kvs))
+                       (take (core/count kvs))
                        (interpose ",")
                        (apply core/str))]
     (vary-meta
@@ -2677,7 +2693,7 @@
                            (conj (meta mm-name) m)
                            m)
              mm-ns (core/-> &env :ns :name core/str)]
-    (core/when (= (count options) 1)
+    (core/when (= (core/count options) 1)
       (throw
         #?(:clj (Exception. "The syntax for defmulti has changed. Example: (defmulti name dispatch-fn :default dispatch-value)")
            :cljs (js/Error. "The syntax for defmulti has changed. Example: (defmulti name dispatch-fn :default dispatch-value)"))))
@@ -3008,10 +3024,10 @@
       form)))
 
 (core/defn- multi-arity-fn? [fdecl]
-  (core/< 1 (count fdecl)))
+  (core/< 1 (core/count fdecl)))
 
 (core/defn- variadic-fn? [fdecl]
-  (core/and (= 1 (count fdecl))
+  (core/and (= 1 (core/count fdecl))
             (some '#{&} (ffirst fdecl))))
 
 (core/defn- variadic-fn*
@@ -3028,8 +3044,8 @@
                     `[~param (^::ana/no-resolve first ~restarg)
                       ~restarg (^::ana/no-resolve next ~restarg)])
                   (apply-to []
-                    (if (core/< 1 (count sig))
-                      (core/let [params (repeatedly (core/dec (count sig)) gensym)]
+                    (if (core/< 1 (core/count sig))
+                      (core/let [params (repeatedly (core/dec (core/count sig)) gensym)]
                         `(fn
                            ([~restarg]
                             (let [~@(mapcat param-bind params)]
@@ -3044,7 +3060,7 @@
             (fn (~(vec sig) ~@body)))
           ~@(core/when solo
               `[(set! (. ~sym ~'-cljs$lang$maxFixedArity)
-                  ~(core/dec (count sig)))])
+                  ~(core/dec (core/count sig)))])
           (js-inline-comment " @this {Function} ")
           (set! (. ~sym ~'-cljs$lang$applyTo)
             ~(apply-to)))))))
@@ -3069,7 +3085,7 @@
                    (range c)))]
     (core/let [rname (symbol (core/str ana/*cljs-ns*) (core/str name))
                sig   (remove '#{&} arglist)
-               c-1   (core/dec (count sig))
+               c-1   (core/dec (core/count sig))
                macro? (:macro meta)
                meta  (assoc meta
                        :top-fn
@@ -3103,7 +3119,7 @@
                  (map (core/fn [n] `(unchecked-get (js-arguments) ~n))
                    (range c)))
                (fixed-arity [rname sig]
-                 (core/let [c (count sig)]
+                 (core/let [c (core/count sig)]
                    [c `(. ~rname
                          (~(symbol
                              (core/str "cljs$core$IFn$_invoke$arity$" c))
@@ -3114,7 +3130,7 @@
                    `(set!
                       (. ~name
                         ~(symbol (core/str "-cljs$core$IFn$_invoke$arity$"
-                                   (count sig))))
+                                   (core/count sig))))
                       (fn ~method))))]
     (core/let [rname    (symbol (core/str ana/*cljs-ns*) (core/str name))
                arglists (map first fdecl)
@@ -3123,8 +3139,8 @@
                sigs     (remove varsig? arglists)
                maxfa    (apply core/max
                           (concat
-                            (map count sigs)
-                            [(core/- (count (first (filter varsig? arglists))) 2)]))
+                            (map core/count sigs)
+                            [(core/- (core/count (first (filter varsig? arglists))) 2)]))
                macro?   (:macro meta)
                meta     (assoc meta
                           :top-fn
@@ -3134,7 +3150,7 @@
                            :arglists (core/cond-> arglists macro? elide-implicit-macro-args)
                            :arglists-meta (doall (map meta arglists))})
                args-sym (gensym "args")
-               param-counts (map count arglists)]
+               param-counts (map core/count arglists)]
       (core/when (not= (distinct param-counts) param-counts)
         (ana/warning :overload-arity {} {:name name}))
       `(do
