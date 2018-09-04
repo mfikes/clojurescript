@@ -723,7 +723,7 @@ radix specifier is in the form #XXr where XX is the decimal value of *print-base
   [base-writer right-margin miser-width]
   (pretty-writer base-writer right-margin miser-width))
 
-(declare simple-dispatch')
+(declare simple-dispatch)
 
 (defn write-out
   "Write an object to *out* subject to the current bindings of the printer control
@@ -746,7 +746,7 @@ Normal library clients should use the standard \"write\" interface. "
         (-write *out* "...") ;;TODO could this (incorrectly) print ... on the next line?
         (do
           (if *current-length* (set! *current-length* (inc *current-length*)))
-          ((or *print-pprint-dispatch* simple-dispatch') object))))
+          ((or *print-pprint-dispatch* simple-dispatch) object))))
     length-reached))
 
 (defn write
@@ -2906,13 +2906,13 @@ type-map {"core$future_call" "Future",
     (nil? obj) nil
     :default :default))
 
-(defmulti simple-dispatch
+#_(defmulti simple-dispatch
   "The pretty print dispatch function for simple data structure format."
   type-dispatcher)
 
-(defn- simple-dispatch' [obj]
+(defn simple-dispatch [obj]
   (let [dispatch-val (type-dispatcher obj)]
-    ((or (get-method simple-dispatch dispatch-val)
+    ((or #_(get-method simple-dispatch dispatch-val)
          (case dispatch-val
            :list pprint-list
            :vector pprint-vector
@@ -3211,15 +3211,15 @@ type-map {"core$future_call" "Future",
       (print (name sym))
       (pr sym))))
 
-(defmulti
+#_(defmulti
   code-dispatch
   "The pretty print dispatch function for pretty printing Clojure code."
   {:added "1.2" :arglists '[[object]]}
   type-dispatcher)
 
-(defn code-dispatch' [obj]
+(defn code-dispatch [obj]
   (let [dispatch-val (type-dispatcher obj)]
-    ((or (get-method code-dispatch dispatch-val)
+    ((or #_(get-method code-dispatch dispatch-val)
          (case dispatch-val
            :list pprint-code-list
            :symbol pprint-code-symbol
