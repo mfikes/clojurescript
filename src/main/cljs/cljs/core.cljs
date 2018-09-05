@@ -1222,7 +1222,7 @@
         (IndexedSeq. coll 0 nil))
 
       (string? coll)
-      (when-not (zero? (alength coll))
+      (when-not (zero? (.-length coll))
         (IndexedSeq. coll 0 nil))
 
       (native-satisfies? ISeqable coll)
