@@ -876,7 +876,7 @@
    (core/let [forms (concat [x] next)
               analyzed-forms (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms)]
      (if (every? #(simple-test-expr? &env %) analyzed-forms)
-       (core/let [and-str (core/->> (repeat (count forms) "(~{})")
+       (core/let [and-str (core/->> (repeat (core/count forms) "(~{})")
                             (interpose " && ")
                             (#(concat ["("] % [")"]))
                             (apply core/str))]
@@ -896,7 +896,7 @@
    (core/let [forms (concat [x] next)
               analyzed-forms (map #(cljs.analyzer/no-warn (cljs.analyzer/analyze &env %)) forms)]
      (if (every? #(simple-test-expr? &env %) analyzed-forms)
-       (core/let [or-str (core/->> (repeat (count forms) "(~{})")
+       (core/let [or-str (core/->> (repeat (core/count forms) "(~{})")
                            (interpose " || ")
                            (#(concat ["("] % [")"]))
                            (apply core/str))]
