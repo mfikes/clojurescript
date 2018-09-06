@@ -59,7 +59,8 @@
   *out* nil)
 
 (def
-  ^{:dynamic true}
+  ^{:dynamic true
+    :tag boolean}
   *assert* true)
 
 (defonce
@@ -93,6 +94,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "When set to true, output will be flushed whenever a newline is printed.
 
   Defaults to true."}
@@ -100,6 +102,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "When set to logical false will drop newlines from printing calls.
   This is to work around the implicit newlines emitted by standard JavaScript
   console objects."}
@@ -107,6 +110,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "When set to logical false, strings and characters will be printed with
   non-alphanumeric characters converted to the appropriate escape sequences.
 
@@ -115,6 +119,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "If set to logical true, when printing an object, its metadata will also
   be printed in a form that can be read back by the reader.
 
@@ -123,6 +128,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "When set to logical true, objects will be printed in a way that preserves
   their type when read in later.
 
@@ -131,6 +137,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "*print-namespace-maps* controls whether the printer will print
   namespace map literal syntax.
 
@@ -164,6 +171,7 @@
 
 (def
   ^{:dynamic true
+    :tag boolean
     :doc "*print-fns-bodies* controls whether functions print their source or
     only their names."}
   *print-fn-bodies* false)
