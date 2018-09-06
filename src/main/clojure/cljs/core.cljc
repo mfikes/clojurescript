@@ -837,16 +837,22 @@
                  (cljs.analyzer/no-warn (cljs.analyzer/analyze env form)))
     allowed-tags))
 
+(core/defn- string-expr [e]
+  (vary-meta e assoc :tag 'string))
+
+(core/defn- string-coercion-unnecessary? [env form]
+  (typed-expr? env form '#{string clj-nil}))
+
 (core/defmacro str [& xs]
   (core/let [interpolate (core/fn [x]
-                           (if (core/string? x)
+                           (if (string-coercion-unnecessary? &env x)
                              "~{}"
                              "cljs.core.str.cljs$core$IFn$_invoke$arity$1(~{})"))
              strs (core/->> xs
                     (map interpolate)
                     (interpose ",")
                     (apply core/str))]
-    (list* 'js* (core/str "[" strs "].join('')") xs)))
+    (string-expr (list* 'js* (core/str "[" strs "].join('')") xs))))
 
 (core/defn- type-expr [tag e]
   (vary-meta e assoc :tag tag))

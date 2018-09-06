@@ -1626,6 +1626,15 @@
   (is (thrown? js/Error ((not empty?) "foo")))
   (is (thrown? js/Error ((not empty?) ""))))
 
+(defn str-fn-2865 []
+  "hello")
+
+(deftest test-cljs-2865
+  (is (= "ab" (str "a" (let [x true] (when x "b")))))
+  (is (= "ab" (str "a" js/undefined "b")))
+  (is (= "ab" (str "a" nil "b")))
+  (is (= "ahellob" (str "a" (str-fn-2865) "b"))))
+
 (deftest test-cljs-2886
   (is (zero? (count "")))
   (is (== 1 (count "a")))
