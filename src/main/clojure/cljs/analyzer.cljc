@@ -1860,7 +1860,7 @@
         fixed-arity     (count params')
         recur-frame     {:protocol-impl (:protocol-impl env)
                          :params        params
-                         :arg-tags      (mapv #(atom (:tag %)) params)
+                         :param-tags      (mapv #(atom (:tag %)) params)
                          :flag          (atom nil)}
         recur-frames    (cons recur-frame *recur-frames*)
         body-env        (assoc env :context :return :locals locals)
@@ -1868,7 +1868,7 @@
         expr            (when analyze-body?
                           (analyze-fn-method-body body-env body-form recur-frames))
         recurs          @(:flag recur-frame)]
-    (let [updated-tags (mapv deref (:arg-tags recur-frame))]
+    (let [updated-tags (mapv deref (:param-tags recur-frame))]
       (if (= (mapv :tag params) updated-tags)
         (merge
           {:env         env
@@ -3254,8 +3254,6 @@
             (contains? t 'js)
             (some array-types t))))))
 
-#_(cljs.analyzer/parse 'fn* {} '(fn ([b a] (+ 1 a))) nil nil)
-
 (defn infer-numeric-args [argexprs]
   (run! (fn [{:keys [name local tag arg-id]}]
           (when (and (= :arg local)
@@ -3264,7 +3262,7 @@
               (when (seq recur-frames)
                 (let [recur-frame (first recur-frames)]
                   (if-let [arg-tag (and (= name (get-in recur-frame [:params arg-id :name]))
-                                        (get-in recur-frame [:arg-tags arg-id]))]
+                                        (get-in recur-frame [:param-tags arg-id]))]
                     (reset! arg-tag 'number)
                     (recur (rest recur-frames))))))))
     argexprs))
@@ -3409,7 +3407,10 @@
                 actual-tags   (mapv :tag argexprs)]
             (when (some (fn [[expected-tag actual-tag]]
                           (and (some? expected-tag)
+                               ('#{boolean number string} expected-tag)
                                (some? actual-tag)
+                               (symbol? actual-tag)
+                               (not ('#{any js} actual-tag))
                                (not= expected-tag actual-tag)))
                     (map vector expected-tags actual-tags))
               (warning :invoke-type-mismatch env {:name     (first form)
