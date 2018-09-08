@@ -450,7 +450,7 @@
 
 (defmethod error-message :invoke-type-mismatch
   [warning-type info]
-  (str "Type mismatch calling " (:fn info) ": expected" (:expected info) ", got " (:actual info) " instead"))
+  (str "Type mismatch calling " (:name info) ": expected " (:expected info) ", got " (:actual info) " instead"))
 
 (defmethod error-message :invoke-ctor
   [warning-type info]
@@ -3405,8 +3405,16 @@
       (let [ana-expr #(analyze enve %)
             argexprs (mapv ana-expr args)]
         (when ^boolean fn-var?
-          (warning :invoke-type-mismatch env {:expected (first (:method-param-tags (:info fexpr)))
-                                              :actual   (map :tag argexprs)}))
+          (let [expected-tags (first (:method-param-tags (:info fexpr)))
+                actual-tags   (mapv :tag argexprs)]
+            (when (some (fn [[expected-tag actual-tag]]
+                          (and (some? expected-tag)
+                               (some? actual-tag)
+                               (not= expected-tag actual-tag)))
+                    (map vector expected-tags actual-tags))
+              (warning :invoke-type-mismatch env {:name     (first form)
+                                                  :expected expected-tags
+                                                  :actual   actual-tags}))))
         {:env env :op :invoke :form form :fn fexpr :args argexprs
          :children [:fn :args]}))))
 
