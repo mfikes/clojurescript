@@ -144,6 +144,7 @@
    :invoke-ctor true
    :invalid-arithmetic true
    :invalid-array-access true
+   :invoke-type-mismatch true
    :protocol-invalid-method true
    :protocol-duped-method true
    :protocol-multiple-impls true
@@ -446,6 +447,10 @@
       (when (or (= 'object (first types))
                 (every? #{'string} (butlast (rest types))))
         " (consider goog.object/set for object access)"))))
+
+(defmethod error-message :invoke-type-mismatch
+  [warning-type info]
+  (str "Type mismatch calling " (:fn info) ": expected" (:expected info) ", got " (:actual info) " instead"))
 
 (defmethod error-message :invoke-ctor
   [warning-type info]
@@ -1750,7 +1755,8 @@
                :info (-> protocol-symbol meta :protocol-info)
                :impls #{}})
             (when fn-var?
-              (let [params (map #(vec (map :name (:params %))) (:methods init-expr))]
+              (let [params (map #(vec (map :name (:params %))) (:methods init-expr))
+                    param-tags (map #(vec (map :tag (:params %))) (:methods init-expr))]
                 (merge
                   {:fn-var (not (:macro sym-meta))
                    ;; protocol implementation context
@@ -1762,6 +1768,7 @@
                     {:variadic? (:variadic? init-expr)
                      :max-fixed-arity (:max-fixed-arity init-expr)
                      :method-params params
+                     :method-param-tags param-tags
                      :arglists (:arglists sym-meta)
                      :arglists-meta (doall (map meta (:arglists sym-meta)))}))))
             (when (and (:declared sym-meta)
@@ -3397,6 +3404,9 @@
                ~@(if bind-args? arg-syms args)))))
       (let [ana-expr #(analyze enve %)
             argexprs (mapv ana-expr args)]
+        (when ^boolean fn-var?
+          (warning :invoke-type-mismatch env {:expected (first (:method-param-tags (:info fexpr)))
+                                              :actual   (map :tag argexprs)}))
         {:env env :op :invoke :form form :fn fexpr :args argexprs
          :children [:fn :args]}))))
 
