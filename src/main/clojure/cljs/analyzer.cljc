@@ -3254,18 +3254,18 @@
             (contains? t 'js)
             (some array-types t))))))
 
-(defn infer-numeric-args [argexprs]
-  (run! (fn [{:keys [name local tag arg-id]}]
-          (when (and (= :arg local)
-                     (nil? tag))
-            (loop [recur-frames *recur-frames*]
-              (when (seq recur-frames)
-                (let [recur-frame (first recur-frames)]
-                  (if-let [arg-tag (and (= name (get-in recur-frame [:params arg-id :name]))
-                                        (get-in recur-frame [:param-tags arg-id]))]
-                    (reset! arg-tag 'number)
-                    (recur (rest recur-frames))))))))
-    argexprs))
+(defn infer-parameter-tags [expected-tags argexprs]
+  (doall (map (fn [expected-tag {:keys [name local tag arg-id]}]
+                (when (and (= :arg local)
+                           (nil? tag))
+                  (loop [recur-frames *recur-frames*]
+                    (when (seq recur-frames)
+                      (let [recur-frame (first recur-frames)]
+                        (if-let [param-tag (and (= name (get-in recur-frame [:params arg-id :name]))
+                                              (get-in recur-frame [:param-tags arg-id]))]
+                          (reset! param-tag expected-tag)
+                          (recur (rest recur-frames))))))))
+           expected-tags argexprs)))
 
 (defn analyze-js-star* [env jsform args form]
   (let [enve      (assoc env :context :expr)
@@ -3285,7 +3285,7 @@
                     #?(:clj  (= sym (:js-op form-meta))
                        :cljs (symbol-identical? sym (:js-op form-meta))))]
     (when (true? numeric)
-      (infer-numeric-args argexprs)
+      (infer-parameter-tags (repeat 'number) argexprs)
       (validate :invalid-arithmetic #(every? numeric-type? %)))
     {:op :js
      :env env
@@ -3405,6 +3405,7 @@
         (when ^boolean fn-var?
           (let [expected-tags (first (:method-param-tags (:info fexpr)))
                 actual-tags   (mapv :tag argexprs)]
+            (infer-parameter-tags expected-tags argexprs)
             (when (some (fn [[expected-tag actual-tag]]
                           (and (some? expected-tag)
                                ('#{boolean number string} expected-tag)
