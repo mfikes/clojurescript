@@ -1848,12 +1848,16 @@
         fixed-arity     (count params')
         recur-frame     {:protocol-impl (:protocol-impl env)
                          :params        params
+                         :arg-tags      (mapv #(atom (:tag %)) params)
                          :flag          (atom nil)}
         recur-frames    (cons recur-frame *recur-frames*)
         body-env        (assoc env :context :return :locals locals)
         body-form       `(do ~@body)
         expr            (when analyze-body?
                           (analyze-fn-method-body body-env body-form recur-frames))
+        params          (mapv (fn [param tag]
+                                (assoc param :tag @tag))
+                          params (:arg-tags recur-frame))
         recurs          @(:flag recur-frame)]
     (merge
       {:env env
@@ -3238,6 +3242,21 @@
             (contains? t 'js)
             (some array-types t))))))
 
+#_(cljs.analyzer/parse 'fn* {} '(fn ([b a] (+ 1 a))) nil nil)
+
+(defn infer-numeric-args [argexprs]
+  (run! (fn [{:keys [name local tag arg-id]}]
+          (when (and (= :arg local)
+                     (nil? tag))
+            (loop [recur-frames *recur-frames*]
+              (when (seq recur-frames)
+                (let [recur-frame (first recur-frames)]
+                  (if-let [arg-tag (and (= name (get-in recur-frame [:params arg-id :name]))
+                                        (get-in recur-frame [:arg-tags arg-id]))]
+                    (reset! arg-tag 'number)
+                    (recur (rest recur-frames))))))))
+    argexprs))
+
 (defn analyze-js-star* [env jsform args form]
   (let [enve      (assoc env :context :expr)
         argexprs  (vec (map #(analyze enve %) args))
@@ -3256,6 +3275,7 @@
                     #?(:clj  (= sym (:js-op form-meta))
                        :cljs (symbol-identical? sym (:js-op form-meta))))]
     (when (true? numeric)
+      (infer-numeric-args argexprs)
       (validate :invalid-arithmetic #(every? numeric-type? %)))
     {:op :js
      :env env
