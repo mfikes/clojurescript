@@ -176,8 +176,11 @@
 
 (defmulti emit* :op)
 
+(def ^:private source-map-ops #{:var :local :js-var :js :binding})
+
 (defn emit [ast]
-  (when *source-map-data*
+  (when (and (source-map-ops (:op ast))
+             *source-map-data*)
     (let [{:keys [env]} ast]
       (when (:line env)
         (let [{:keys [line column]} env]
