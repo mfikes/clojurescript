@@ -3554,11 +3554,12 @@
   "Given a sym, a symbol identifying a macro, and env, an analysis environment
    return the corresponding Clojure macroexpander."
   [sym env]
-  (let [mvar (get-expander* sym env)]
-    (when (and (some? mvar)
-            #?(:clj  (.isMacro ^clojure.lang.Var mvar)
-               :cljs ^boolean (.isMacro mvar)))
-      mvar)))
+  (when-not (::no-expand (meta sym))
+    (let [mvar (get-expander* sym env)]
+      (when (and (some? mvar)
+                 #?(:clj  (.isMacro ^clojure.lang.Var mvar)
+                    :cljs ^boolean (.isMacro mvar)))
+        mvar))))
 
 #?(:cljs
    (let [cached-var (delay (get (ns-interns* 'cljs.spec.alpha) 'macroexpand-check))]
