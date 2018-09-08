@@ -1802,14 +1802,14 @@
            :children [:var :init]}
           {:children [:var]})))))
 
-(defn analyze-fn-method-param [env]
+(defn analyze-fn-method-param [env updated-tags]
   (fn [[locals params] [arg-id name]]
     (when (namespace name)
       (throw (error env (str "Can't use qualified name as parameter: " name))))
     (let [line   (get-line name env)
           column (get-col name env)
           nmeta  (meta name)
-          tag    (:tag nmeta)
+          tag    (or (get updated-tags arg-id) (:tag nmeta))
           shadow (when (some? locals)
                    (handle-symbol-local name (locals name)))
           env    (merge (select-keys env [:context])
@@ -1834,14 +1834,19 @@
   (binding [*recur-frames* recur-frames]
     (analyze env form)))
 
-(defn- analyze-fn-method [env locals form type analyze-body?]
+(defn- analyze-fn-method [env locals form type analyze-body? updated-tags]
   (let [param-names     (first form)
         variadic        (boolean (some '#{&} param-names))
         param-names     (vec (remove '#{&} param-names))
         body            (next form)
-        step            (analyze-fn-method-param env)
+        step            (analyze-fn-method-param env updated-tags)
         step-init       [locals []]
         [locals params] (reduce step step-init (map-indexed vector param-names))
+        params          (if updated-tags
+                          (mapv (fn [param tag]
+                                  (assoc param :tag tag))
+                            params updated-tags)
+                          params)
         params'         (if (true? variadic)
                           (butlast params)
                           params)
@@ -1855,23 +1860,23 @@
         body-form       `(do ~@body)
         expr            (when analyze-body?
                           (analyze-fn-method-body body-env body-form recur-frames))
-        params          (mapv (fn [param tag]
-                                (assoc param :tag @tag))
-                          params (:arg-tags recur-frame))
         recurs          @(:flag recur-frame)]
-    (merge
-      {:env env
-       :op :fn-method
-       :variadic? variadic
-       :params params
-       :fixed-arity fixed-arity
-       :type type
-       :form form
-       :recurs recurs}
-      (if (some? expr)
-        {:body (assoc expr :body? true)
-         :children [:params :body]}
-        {:children [:params]}))))
+    (let [updated-tags (mapv deref (:arg-tags recur-frame))]
+      (if (= (mapv :tag params) updated-tags)
+        (merge
+          {:env         env
+           :op          :fn-method
+           :variadic?   variadic
+           :params      params
+           :fixed-arity fixed-arity
+           :type        type
+           :form        form
+           :recurs      recurs}
+          (if (some? expr)
+            {:body     (assoc expr :body? true)
+             :children [:params :body]}
+            {:children [:params]}))
+        (recur env (first step-init) form type analyze-body? updated-tags)))))
 
 (declare analyze-wrap-meta)
 
@@ -1895,7 +1900,7 @@
       (merge name-var ret-tag))))
 
 (defn analyze-fn-methods-pass2* [menv locals type meths]
-  (mapv #(analyze-fn-method menv locals % type true) meths))
+  (mapv #(analyze-fn-method menv locals % type true nil) meths))
 
 (defn analyze-fn-methods-pass2 [menv locals type meths]
   (analyze-fn-methods-pass2* menv locals type meths))
@@ -1929,7 +1934,7 @@
         menv         (merge menv
                        {:protocol-impl proto-impl
                         :protocol-inline proto-inline})
-        methods      (map #(disallowing-ns* (analyze-fn-method menv locals % type (nil? name))) meths)
+        methods      (map #(disallowing-ns* (analyze-fn-method menv locals % type (nil? name) nil)) meths)
         mfa          (transduce (map :fixed-arity) max 0 methods)
         variadic     (boolean (some :variadic? methods))
         locals       (if named-fn?
