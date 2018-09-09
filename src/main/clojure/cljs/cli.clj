@@ -316,6 +316,9 @@ present"
     (repl/repl* renv
       (assoc (dissoc-entry-point-opts opts)
         ::repl/fast-initial-prompt? (fast-initial-prompt? repl-env inits)
+        :quit-prompt (if (empty? inits)
+                       repl/repl-title
+                       (constantly nil))
         :inits
         (into
           [{:type :init-forms
