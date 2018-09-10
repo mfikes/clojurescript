@@ -1245,7 +1245,7 @@
 ;; Note: This is the set of parse multimethod dispatch values,
 ;; along with '&, and differs from cljs.core/special-symbol?
 (def specials '#{if def fn* do let* loop* letfn* throw try recur new set!
-                 ns deftype* defrecord* . js* & quote case* var ns* defmacro})
+                 ns deftype* defrecord* . js* & quote case* var ns* defmacro defmacfn})
 
 (def ^:dynamic *recur-frames* nil)
 (def ^:dynamic *loop-lets* ())
@@ -1444,19 +1444,27 @@
 (defn- eval-form
   [form ns]
   (when-not (find-ns ns)
-    (binding [*ns* *ns*]
-      (eval `(~'ns ~ns))))
+    (create-ns ns))
   (binding [*ns* (the-ns ns)]
-    (eval form)))
+    (eval `(do
+             (clojure.core/refer-clojure)
+             ~form))))
+
+(defn fake-var-ast [env ns sym]
+  (let [sym (symbol (str "#'" ns) (str sym))]
+    {:op :const :val sym :env env :form sym :tag 'cljs.core/Symbol}))
+
+(defmethod parse 'defmacfn
+  [op env form _ _]
+  (eval-form (cons 'clojure.core/defn (rest form)) *cljs-ns*)
+  (fake-var-ast env *cljs-ns* (second form)))
 
 (defmethod parse 'defmacro
   [op env form _ _]
   (eval-form (cons 'clojure.core/defmacro (rest form)) *cljs-ns*)
   (swap! env/*compiler* update-in [::namespaces *cljs-ns* :use-macros] assoc (second form) *cljs-ns*)
   (swap! env/*compiler* update-in [::namespaces *cljs-ns* :require-macros] assoc *cljs-ns* *cljs-ns*)
-  ;; Return a fake "var" for the REPL; it is really a symbol
-  (let [sym (symbol (str "#'" *cljs-ns*) (str (second form)))]
-    {:op :const :val sym :env env :form sym :tag 'cljs.core/Symbol}))
+  (fake-var-ast env *cljs-ns* (second form)))
 
 (defmethod parse 'if
   [op env [_ test then else :as form] name _]
