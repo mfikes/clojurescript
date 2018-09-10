@@ -1245,7 +1245,7 @@
 ;; Note: This is the set of parse multimethod dispatch values,
 ;; along with '&, and differs from cljs.core/special-symbol?
 (def specials '#{if def fn* do let* loop* letfn* throw try recur new set!
-                 ns deftype* defrecord* . js* & quote case* var ns*})
+                 ns deftype* defrecord* . js* & quote case* var ns* defmacro})
 
 (def ^:dynamic *recur-frames* nil)
 (def ^:dynamic *loop-lets* ())
@@ -1440,6 +1440,23 @@
      :children [:var :sym :meta]
      :form form}
     (var-ast env sym)))
+
+(defn- eval-form
+  [form ns]
+  (when-not (find-ns ns)
+    (binding [*ns* *ns*]
+      (eval `(~'ns ~ns))))
+  (binding [*ns* (the-ns ns)]
+    (eval form)))
+
+(defmethod parse 'defmacro
+  [op env form _ _]
+  (eval-form (cons 'clojure.core/defmacro (rest form)) *cljs-ns*)
+  (swap! env/*compiler* update-in [::namespaces *cljs-ns* :use-macros] assoc (second form) *cljs-ns*)
+  (swap! env/*compiler* update-in [::namespaces *cljs-ns* :require-macros] assoc *cljs-ns* *cljs-ns*)
+  ;; Return a fake "var" for the REPL; it is really a symbol
+  (let [sym (symbol (str "#'" *cljs-ns*) (str (second form)))]
+    {:op :const :val sym :env env :form sym :tag 'cljs.core/Symbol}))
 
 (defmethod parse 'if
   [op env [_ test then else :as form] name _]
