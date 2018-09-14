@@ -294,8 +294,10 @@ is trying load some arbitrary ns."
     (when (string/starts-with? repl-ns "cljs.repl.")
       (subs repl-ns (count "cljs.repl.")))))
 
-(defn- fast-initial-prompt? [repl-env inits]
+(defn- fast-initial-prompt? [repl-env options inits]
   (and (empty? inits)
+       (not (:verbose options))
+       (not (:repl-verbose options))
        (contains? #{"node" "nashorn" "graaljs" "rhino"} (repl-name repl-env))))
 
 (defn- repl-opt
@@ -313,7 +315,7 @@ present"
         renv   (apply repl-env (mapcat identity reopts))]
     (repl/repl* renv
       (assoc (dissoc-entry-point-opts opts)
-        ::repl/fast-initial-prompt? (fast-initial-prompt? repl-env inits)
+        ::repl/fast-initial-prompt? (fast-initial-prompt? repl-env options inits)
         :inits
         (into
           [{:type :init-forms
