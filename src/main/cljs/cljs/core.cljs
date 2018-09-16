@@ -5202,7 +5202,7 @@ reduces them without incurring seq initialization"
 
 (defn flatten
   "Takes any nested combination of sequential things (lists, vectors,
-  etc.) and returns their contents as a single, flat sequence.
+  etc.) and returns their contents as a single, flat lazy sequence.
   (flatten nil) returns nil."
   [x]
   (filter #(not (sequential? %))
