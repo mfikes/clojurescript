@@ -18,7 +18,9 @@
                  "Queue literal expects a vector for its elements.")
          :cljs (js/Error.
                  "Queue literal expects a vector for its elements."))))
-  (list 'cljs.core/into 'cljs.core.PersistentQueue.EMPTY form))
+  (if (seq form)
+    (list 'cljs.core/into 'cljs.core.PersistentQueue.EMPTY form)
+    'cljs.core.PersistentQueue.EMPTY))
 
 #?(:clj
    (defn read-uuid
