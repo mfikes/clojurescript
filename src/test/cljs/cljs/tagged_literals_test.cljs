@@ -18,3 +18,8 @@
   (is (= {} (reader/read-string "#cljs/tag {}")))
   (is (= (reader/read-string "#cljs/inc 0") 1))
   (is (= (reader/read-string "#cljs/union #{1}") #{1})))
+
+(deftest test-queue-literal
+  (is (= #queue [] cljs.core.PersistentQueue.EMPTY))
+  (is (= #queue [1 2 3] (into cljs.core.PersistentQueue.EMPTY [1 2 3])))
+  (is (with-redefs [into (fn [& _] (throw (ex-info "Inefficiently created PersistentQueue" {})))] #queue [])))
