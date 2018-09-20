@@ -1752,3 +1752,40 @@
       (analyze ns-env
         '(def *foo* 1)))
     (is (string/starts-with? (first @ws) "*foo* not declared dynamic and thus"))))
+
+(defn inferred-type' [form]
+  (e/with-compiler-env externs-cenv
+                       (:tag (analyze (a/empty-env) form))))
+
+(defmacro inferred-type [form]
+  `(inferred-type' '~form))
+
+(deftest test-cljs-2901-variadic-macro
+  (is (= (inferred-type (do (defn v [& xs] "") (v 1)))
+         'string))
+  (is (= (inferred-type (do (defn v [a & xs] "") (v 1 2)))
+         'string))
+  (is (= (inferred-type (do (defn v [a b & xs] "") (v 1 2 3)))
+         'string))
+  (is (= (inferred-type (do (defn v ^{:tag #{string clj-nil}} [& more] (.substring "abc" 1)) (v)))
+         '#{string clj-nil}))
+  (is (= (inferred-type (do (defn v ^string [& more] more) (v 1)))
+         'string))
+  (is (= (inferred-type (do (defn v [a [b & cs] & xs] "") (v 1 [1 2] 3)))
+         'string)))
+
+(deftest test-cljs-2901-multi-arity-macro
+  (is (= (inferred-type (do (defn v ([] 1) ([xs] "")) (v)))
+         '#{number string}))
+  (is (= (inferred-type (do (defn v ([] "") ([xs] "")) (v)))
+         'string))
+  (is (= (inferred-type (do (defn v (^{:tag #{string number}} [] "") (^number [xs] "")) (v)))
+         '#{string number}))
+  (is (= (inferred-type (do (defn v (^string [] "") (^string [xs] (.substring "" 1))) (v)))
+         'string))
+  (is (= (inferred-type (do (defn ^string v ([] "") ([xs] (.substring "" 1))) (v)))
+         'string))
+  (is (= (inferred-type (do (defn v ([] "") ([xs] "") ([a [b & cs] & xs] false)) (v)))
+         '#{string boolean}))
+  (is (= (inferred-type (do (defn v (^boolean [x] true) ([x y] "")) (v 1 2)))
+         '#{boolean string})))

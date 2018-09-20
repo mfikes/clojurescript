@@ -3072,15 +3072,29 @@
                 (core/drop 2 arglist)))
     arglists))
 
-(core/defn- variadic-fn [name meta [[arglist & body :as method] :as fdecl] emit-var?]
+
+(core/defn- inferred-ret [env method]
+  (:inferred-ret-tag (cljs.analyzer/no-warn
+                       (cljs.analyzer/analyze env `(fn ~method)))))
+
+(core/defn- infer-type [env fdecl-tag]
+  (core/->> fdecl-tag
+            (map (core/fn [[fd expl-tag]] (if (core/nil? expl-tag) (inferred-ret env fd) expl-tag)))
+            (apply ana/add-types)
+            ana/canonicalize-type))
+
+(core/defn- variadic-fn [name env meta [[arglist & body :as method] :as fdecl]]
   (core/letfn [(dest-args [c]
                  (map (core/fn [n] `(unchecked-get (js-arguments) ~n))
                    (range c)))]
     (core/let [rname (symbol (core/str ana/*cljs-ns*) (core/str name))
+               emit-var? (:def-emits-var env)
                sig   (remove '#{&} arglist)
                c-1   (core/dec (count sig))
                macro? (:macro meta)
                meta  (assoc meta
+                       :tag (core/when-not macro?
+                              (infer-type env (:explicit-tags meta)))
                        :top-fn
                        {:variadic? true
                         :max-fixed-arity (core/cond-> c-1 macro? (core/- 2))
@@ -3099,15 +3113,7 @@
          ~(variadic-fn* rname method)
          ~(core/when emit-var? `(var ~name))))))
 
-(core/comment
-  (require '[clojure.pprint :as pp])
-  (pp/pprint (variadic-fn 'foo {} '(([& xs]))))
-  (pp/pprint (variadic-fn 'foo {} '(([a & xs] xs))))
-  (pp/pprint (variadic-fn 'foo {} '(([a b & xs] xs))))
-  (pp/pprint (variadic-fn 'foo {} '(([a [b & cs] & xs] xs))))
-  )
-
-(core/defn- multi-arity-fn [name meta fdecl emit-var?]
+(core/defn- multi-arity-fn [name env meta fdecl]
   (core/letfn [(dest-args [c]
                  (map (core/fn [n] `(unchecked-get (js-arguments) ~n))
                    (range c)))
@@ -3127,6 +3133,7 @@
                       (fn ~method))))]
     (core/let [rname    (symbol (core/str ana/*cljs-ns*) (core/str name))
                arglists (map first fdecl)
+               emit-var? (:def-emits-var env)
                varsig?  #(some '#{&} %)
                variadic (boolean (some varsig? arglists))
                sigs     (remove varsig? arglists)
@@ -3136,6 +3143,10 @@
                             [(core/- (count (first (filter varsig? arglists))) 2)]))
                macro?   (:macro meta)
                meta     (assoc meta
+                          :tag (when-not macro?
+                                 (if (core/nil? (:tag meta))
+                                   (infer-type env (:explicit-tags meta))
+                                   (:tag meta)))
                           :top-fn
                           {:variadic? variadic
                            :max-fixed-arity (core/cond-> maxfa macro? (core/- 2))
@@ -3216,6 +3227,11 @@
                             (butlast fdecl)
                             fdecl)
                     m (conj {:arglists (core/list 'quote (sigs fdecl))} m)
+                    args-tags (core/->> fdecl
+                                   (map (core/fn [[args &body :as method]] (core/vector method args)))
+                                   (map (core/fn [[method arg]] (core/vector method (:tag (meta arg)))))
+                                   (map (core/fn [[method tag]] (core/vector method (if (core/nil? tag) nil (ana/->type-set tag))))))
+                    m (conj {:explicit-tags args-tags} m)
                     ;; no support for :inline
                     ;m (core/let [inline (:inline m)
                     ;             ifn (first inline)
@@ -3235,16 +3251,16 @@
                     m (conj (if (meta name) (meta name) {}) m)]
            (core/cond
              (multi-arity-fn? fdecl)
-             (multi-arity-fn name
+             (multi-arity-fn name &env
                (if (comp/checking-types?)
                  (update-in m [:jsdoc] conj "@param {...*} var_args")
-                 m) fdecl (:def-emits-var &env))
+                 m) fdecl)
 
              (variadic-fn? fdecl)
-             (variadic-fn name
+             (variadic-fn name &env
                (if (comp/checking-types?)
                  (update-in m [:jsdoc] conj "@param {...*} var_args")
-                 m) fdecl (:def-emits-var &env))
+                 m) fdecl)
 
              :else
              (core/list 'def (with-meta name m)

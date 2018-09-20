@@ -886,6 +886,54 @@
                  'prototype)})
     x))
 
+(defn ->type-set
+  "Ensures that a type tag is a set."
+  [t]
+  (if #?(:clj  (set? t)
+         :cljs (cljs-set? t))
+    t
+    #{t}))
+
+(defn canonicalize-type [t]
+  "Ensures that a type tag is either nil, a type symbol, or a non-singleton
+  set of type symbols, absorbing clj-nil into seq and all types into any."
+  (cond
+    (symbol? t) t
+    (empty? t) nil
+    (== 1 (count t)) (first t)
+    (contains? t 'any) 'any
+    (contains? t 'seq) (let [res (disj t 'clj-nil)]
+                         (if (== 1 (count res))
+                           'seq
+                           res))
+    :else t))
+
+(defn add-types
+  "Produces a union of types."
+  ([] 'any)
+  ([t1] t1)
+  ([t1 t2]
+   (if (or (nil? t1)
+           (nil? t2))
+     'any
+     (-> (set/union (->type-set t1) (->type-set t2))
+         canonicalize-type)))
+  ([t1 t2 & ts]
+   (apply add-types (add-types t1 t2) ts)))
+
+(defn subtract-types
+  "Subtract types from a type."
+  ([t1] t1)
+  ([t1 t2]
+   (if (or (nil? t1)
+           (= 'any t1)
+           (= t1 t2))
+     'any
+     (-> (set/difference (->type-set t1) (->type-set t2))
+         canonicalize-type)))
+  ([t1 t2 & ts]
+   (apply subtract-types (subtract-types t1 t2) ts)))
+
 (def alias->type
   '{object   Object
     string   String
