@@ -3364,27 +3364,27 @@ reduces them without incurring seq initialization"
 
 (defn ^boolean simple-ident?
   "Return true if x is a symbol or keyword without a namespace"
-  [x] (and (ident? x) (nil? (namespace x))))
+  [x] (and (ident? x) (nil? (.-ns x))))
 
 (defn ^boolean qualified-ident?
   "Return true if x is a symbol or keyword with a namespace"
-  [x] (boolean (and (ident? x) (namespace x) true)))
+  [x] (and (ident? x) (some? (.-ns x))))
 
 (defn ^boolean simple-symbol?
   "Return true if x is a symbol without a namespace"
-  [x] (and (symbol? x) (nil? (namespace x))))
+  [x] (and (symbol? x) (nil? (.-ns x))))
 
 (defn ^boolean qualified-symbol?
   "Return true if x is a symbol with a namespace"
-  [x] (boolean (and (symbol? x) (namespace x) true)))
+  [x] (and (symbol? x) (some? (.-ns x))))
 
 (defn ^boolean simple-keyword?
   "Return true if x is a keyword without a namespace"
-  [x] (and (keyword? x) (nil? (namespace x))))
+  [x] (and (keyword? x) (nil? (.-ns x))))
 
 (defn ^boolean qualified-keyword?
   "Return true if x is a keyword with a namespace"
-  [x] (boolean (and (keyword? x) (namespace x) true)))
+  [x] (and (keyword? x) (some? (.-ns x))))
 
 (defn keyword
   "Returns a Keyword with the given namespace and name.  Do not use :
