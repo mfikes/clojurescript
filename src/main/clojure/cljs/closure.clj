@@ -2963,7 +2963,7 @@
                            (repeat warnings))
                          warnings)))
                    ana/*verbose* (:verbose opts)]
-           (when ana/*verbose*
+           (when (and ana/*verbose* (not (::watch-triggered-build? opts)))
              (util/debug-prn "Options passed to ClojureScript compiler:" (pr-str opts)))
            (let [one-file? (and (:main opts)
                                 (#{:advanced :simple :whitespace} (:optimizations opts)))
@@ -3106,8 +3106,9 @@
           srvc  (.newWatchService fs)]
       (letfn [(buildf []
                 (try
-                  (let [start (System/nanoTime)]
-                    (build source opts compiler-env)
+                  (let [start (System/nanoTime)
+                        watch-opts (assoc opts ::watch-triggered-build? true)]
+                    (build source watch-opts compiler-env)
                     (println "... done. Elapsed"
                       (/ (unchecked-subtract (System/nanoTime) start) 1e9) "seconds")
                     (flush))
