@@ -1603,7 +1603,9 @@ reduces them without incurring seq initialization"
   (-meta [coll] meta)
   IWithMeta
   (-with-meta [coll new-meta]
-    (IndexedSeq. arr i new-meta))
+    (if (identical? new-meta meta)
+      coll
+      (IndexedSeq. arr i new-meta)))
 
   ASeq
   ISeq
@@ -1703,7 +1705,9 @@ reduces them without incurring seq initialization"
   (-meta [coll] meta)
   IWithMeta
   (-with-meta [coll new-meta]
-    (RSeq. ci i new-meta))
+    (if (identical? new-meta meta)
+      coll
+      (RSeq. ci i new-meta)))
 
   ISeqable
   (-seq [coll] coll)
@@ -3051,7 +3055,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (List. meta first rest count __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (List. meta first rest count __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (List. new-meta first rest count __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -3125,7 +3132,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (EmptyList. meta))
 
   IWithMeta
-  (-with-meta [coll meta] (EmptyList. meta))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (EmptyList. new-meta)))
 
   IMeta
   (-meta [coll] meta)
@@ -3228,7 +3238,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (Cons. meta first rest __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (Cons. meta first rest __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (Cons. new-meta first rest __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -3424,7 +3437,10 @@ reduces them without incurring seq initialization"
     (not fn))
 
   IWithMeta
-  (-with-meta [coll meta] (LazySeq. meta #(-seq coll) nil __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (LazySeq. new-meta #(-seq coll) nil __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -3542,8 +3558,10 @@ reduces them without incurring seq initialization"
     (-lastIndexOf coll x start))
 
   IWithMeta
-  (-with-meta [coll m]
-    (ChunkedCons. chunk more m __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (ChunkedCons. chunk more new-meta __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -4820,7 +4838,10 @@ reduces them without incurring seq initialization"
     (some? current))
 
   IWithMeta
-  (-with-meta [coll meta] (Cycle. meta all prev current _next))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (Cycle. new-meta all prev current _next)))
 
   IMeta
   (-meta [coll] meta)
@@ -4892,7 +4913,10 @@ reduces them without incurring seq initialization"
   (-realized? [coll] false)
   
   IWithMeta
-  (-with-meta [coll meta] (Repeat. meta count val next nil))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (Repeat. new-meta count val next nil)))
 
   IMeta
   (-meta [coll] meta)
@@ -4998,7 +5022,10 @@ reduces them without incurring seq initialization"
     (not (identical? seed UNREALIZED-SEED)))
 
   IWithMeta
-  (-with-meta [coll meta] (Iterate. meta f prev-seed seed next))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (Iterate. new-meta f prev-seed seed next)))
 
   IMeta
   (-meta [coll] meta)
@@ -5464,7 +5491,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (PersistentVector. meta cnt shift root tail __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentVector. meta cnt shift root tail __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentVector. new-meta cnt shift root tail __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -5706,8 +5736,10 @@ reduces them without incurring seq initialization"
     (-lastIndexOf coll x start))
 
   IWithMeta
-  (-with-meta [coll m]
-    (chunked-seq vec node i off m))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (chunked-seq vec node i off new-meta)))
   IMeta
   (-meta [coll] meta)
 
@@ -5801,7 +5833,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (Subvec. meta v start end __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (build-subvec meta v start end __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (build-subvec new-meta v start end __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -6160,7 +6195,10 @@ reduces them without incurring seq initialization"
     (-lastIndexOf coll x start))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentQueueSeq. meta front rear __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentQueueSeq. new-meta front rear __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -6222,7 +6260,10 @@ reduces them without incurring seq initialization"
     (PersistentQueueIter. front (-iterator rear)))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentQueue. meta count front rear __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentQueue. new-meta count front rear __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -6352,7 +6393,10 @@ reduces them without incurring seq initialization"
     (-equiv this other))
 
   IWithMeta
-  (-with-meta [coll meta] (ObjMap. meta keys strobj update-count __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (ObjMap. new-meta keys strobj update-count __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -6698,7 +6742,9 @@ reduces them without incurring seq initialization"
 
   IWithMeta
   (-with-meta [coll new-meta]
-    (PersistentArrayMapSeq. arr i new-meta))
+    (if (identical? new-meta _meta)
+      coll
+      (PersistentArrayMapSeq. arr i new-meta)))
 
   ICounted
   (-count [coll]
@@ -6782,7 +6828,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (PersistentArrayMap. meta cnt arr __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentArrayMap. meta cnt arr __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentArrayMap. new-meta cnt arr __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -7652,7 +7701,10 @@ reduces them without incurring seq initialization"
   (-meta [coll] meta)
 
   IWithMeta
-  (-with-meta [coll meta] (NodeSeq. meta nodes i s __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (NodeSeq. new-meta nodes i s __hash)))
 
   ICollection
   (-conj [coll o] (cons o coll))
@@ -7730,7 +7782,10 @@ reduces them without incurring seq initialization"
   (-meta [coll] meta)
 
   IWithMeta
-  (-with-meta [coll meta] (ArrayNodeSeq. meta nodes i s __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (ArrayNodeSeq. new-meta nodes i s __hash)))
 
   ICollection
   (-conj [coll o] (cons o coll))
@@ -7823,7 +7878,10 @@ reduces them without incurring seq initialization"
         root-iter)))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentHashMap. meta cnt root has-nil? nil-val __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentHashMap. new-meta cnt root has-nil? nil-val __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -8149,8 +8207,10 @@ reduces them without incurring seq initialization"
   (-meta [coll] meta)
 
   IWithMeta
-  (-with-meta [coll meta]
-    (PersistentTreeMapSeq. meta stack ascending? cnt __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentTreeMapSeq. new-meta stack ascending? cnt __hash)))
 
   IReduce
   (-reduce [coll f] (seq-reduce f coll))
@@ -8691,7 +8751,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (PersistentTreeMap. comp tree cnt meta __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentTreeMap. comp tree cnt meta __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentTreeMap. comp tree cnt new-meta __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -8880,7 +8943,10 @@ reduces them without incurring seq initialization"
   (-meta [coll] _meta)
 
   IWithMeta
-  (-with-meta [coll new-meta] (KeySeq. mseq new-meta))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta _meta)
+      coll
+      (KeySeq. mseq new-meta)))
 
   ISeqable
   (-seq [coll] coll)
@@ -8956,7 +9022,10 @@ reduces them without incurring seq initialization"
   (-meta [coll] _meta)
 
   IWithMeta
-  (-with-meta [coll new-meta] (ValSeq. mseq new-meta))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta _meta)
+      coll
+      (ValSeq. mseq new-meta)))
 
   ISeqable
   (-seq [coll] coll)
@@ -9093,7 +9162,10 @@ reduces them without incurring seq initialization"
     (HashSetIter. (-iterator hash-map)))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentHashSet. meta hash-map __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentHashSet. new-meta hash-map __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -9247,7 +9319,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (PersistentTreeSet. meta tree-map __hash))
 
   IWithMeta
-  (-with-meta [coll meta] (PersistentTreeSet. meta tree-map __hash))
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (PersistentTreeSet. new-meta tree-map __hash)))
 
   IMeta
   (-meta [coll] meta)
@@ -9581,7 +9656,10 @@ reduces them without incurring seq initialization"
   (-clone [_] (Range. meta start end step __hash))
 
   IWithMeta
-  (-with-meta [rng meta] (Range. meta start end step __hash))
+  (-with-meta [rng new-meta]
+    (if (identical? new-meta meta)
+      rng
+      (Range. new-meta start end step __hash)))
 
   IMeta
   (-meta [rng] meta)
