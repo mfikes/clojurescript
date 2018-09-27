@@ -245,11 +245,7 @@
 
 (defn ^boolean not
   "Returns true if x is logical false, false otherwise."
-  [x]
-  (cond
-    (nil? x) true
-    (false? x) true
-    :else false))
+  [x] (or (nil? x) (false? x)))
 
 (defn ^boolean some?
   "Returns true if x is not nil, false otherwise."
