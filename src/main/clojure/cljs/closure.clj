@@ -622,15 +622,27 @@
   [compilable opts]
   (-find-sources compilable opts))
 
+(declare absolute-path?)
+(declare same-or-subdirectory-of?)
+
 (defn compile-file
   "Compile a single cljs file. If no output-file is specified, returns
-  a string of compiled JavaScript. With an output-file option, the
-  compiled JavaScript will written to this location and the function
-  returns a JavaScriptFile. In either case the return value satisfies
-  IJavaScript."
+  a string of compiled JavaScript. With an output-file option, which can
+  be a relative or absolute path string or File, the compiled JavaScript
+  will be written to this location and the function returns a
+  JavaScriptFile. In either case the return value satisfies IJavaScript."
   [^File file {:keys [output-file] :as opts}]
     (if output-file
-      (let [out-file (io/file (util/output-directory opts) output-file)]
+      (let [out-dir (util/output-directory opts)
+            out-file (if (absolute-path? output-file)
+                       (do
+                         (assert (same-or-subdirectory-of? out-dir output-file)
+                           (str "Output file "
+                                (util/path output-file)
+                                " is not in output directory "
+                                out-dir))
+                         (io/file output-file))
+                       (io/file out-dir output-file))]
         (if (and (aot-cache? opts)
                  (gitlibs-src? file))
           (let [cacheable  (ana/cacheable-files file (util/ext file) opts)
