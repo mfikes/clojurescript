@@ -536,13 +536,19 @@
   (let [prefix (cond
                  (keyword? value) "cst$kw$"
                  (symbol? value)  "cst$sym$"
+                 (map? value)     "cst$map$"
+                 (vector? value)  "cst$vec$"
+                 (set? value)     "cst$set$"
                  :else
                  (throw
                    #?(:clj (Exception. (str "constant type " (type value) " not supported"))
                       :cljs (js/Error. (str "constant type " (type value) " not supported")))))
-        name   (if (keyword? value)
-                 (subs (str value) 1)
-                 (str value))
+        name   (cond
+                (keyword? value) (subs (str value) 1)
+                (symbol? value) (str value)
+                (map? value) (str "map-" (hash value))
+                (vector? value) (str "vec-" (hash value))
+                (set? value) (str "set-" (hash value)))
         name   (if (= "." name)
                  "_DOT_"
                  (-> name
@@ -3632,11 +3638,14 @@
   [env form]
   (let [expr-env (assoc env :context :expr)
         ks (disallowing-recur (mapv #(analyze expr-env %) (keys form)))
-        vs (disallowing-recur (mapv #(analyze expr-env %) (vals form)))]
-    (analyze-wrap-meta {:op :map :env env :form form
-                        :keys ks :vals vs
-                        :children [:keys :vals]
-                        :tag 'cljs.core/IMap})))
+        vs (disallowing-recur (mapv #(analyze expr-env %) (vals form)))
+        ast (analyze-wrap-meta {:op :map :env env :form form
+                                :keys ks :vals vs
+                                :children [:keys :vals]
+                                :tag 'cljs.core/IMap})]
+    (when (constant-value? ast)
+      (register-constant! env form))
+    ast))
 
 ;; :list is not used in the emitter any more, but analyze-list is called from analyze-const
 ;; to hit the `register-constant!` cases for symbols and keywords.
@@ -3649,14 +3658,20 @@
 (defn analyze-vector
   [env form]
   (let [expr-env (assoc env :context :expr)
-        items (disallowing-recur (mapv #(analyze expr-env %) form))]
-    (analyze-wrap-meta {:op :vector :env env :form form :items items :children [:items] :tag 'cljs.core/IVector})))
+        items (disallowing-recur (mapv #(analyze expr-env %) form))
+        ast (analyze-wrap-meta {:op :vector :env env :form form :items items :children [:items] :tag 'cljs.core/IVector})]
+    (when (constant-value? ast)
+      (register-constant! env form))
+    ast))
 
 (defn analyze-set
   [env form]
   (let [expr-env (assoc env :context :expr)
-        items (disallowing-recur (mapv #(analyze expr-env %) form))]
-    (analyze-wrap-meta {:op :set :env env :form form :items items :children [:items] :tag 'cljs.core/ISet})))
+        items (disallowing-recur (mapv #(analyze expr-env %) form))
+        ast (analyze-wrap-meta {:op :set :env env :form form :items items :children [:items] :tag 'cljs.core/ISet})]
+    (when (constant-value? ast)
+      (register-constant! env form))
+    ast))
 
 (defn analyze-js-value
   [env ^JSValue form]

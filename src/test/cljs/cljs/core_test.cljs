@@ -17,6 +17,9 @@
             [clojure.set :as set]
             [goog.object :as gobject]))
 
+(deftest test-special-symbol?
+  (is (special-symbol? 'if)))
+
 (deftest test-metadata
   (testing "Testing metadata"
     (is (= {"x" "y"} (meta ^{"x" "y"} [])))

@@ -271,15 +271,33 @@
 (defn all-distinct? [xs]
   (apply distinct? xs))
 
+(defn emits-map [x]
+  (emit-map (keys x) (vals x) emit-constants-comma-sep all-distinct?))
+
+(defn emits-vector [x]
+  (emit-vector x emit-constants-comma-sep))
+
+(defn emits-set [x]
+  (emit-set x emit-constants-comma-sep all-distinct?))
+
 #?(:clj
    (defn emit-constant-no-meta [x]
      (cond
        (seq? x) (emit-list x emit-constants-comma-sep)
        (record? x) (let [[ns name] (ana/record-ns+name x)]
                      (emit-record-value ns name #(emit-constant (into {} x))))
-       (map? x) (emit-map (keys x) (vals x) emit-constants-comma-sep all-distinct?)
-       (vector? x) (emit-vector x emit-constants-comma-sep)
-       (set? x) (emit-set x emit-constants-comma-sep all-distinct?)
+       (map? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
+                                    (get (::ana/constant-table @env/*compiler*) x))]
+                  (emits "cljs.core." value)
+                  (emits-map x))
+       (vector? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
+                                       (get (::ana/constant-table @env/*compiler*) x))]
+                     (emits "cljs.core." value)
+                     (emits-vector x))
+       (set? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
+                                    (get (::ana/constant-table @env/*compiler*) x))]
+                  (emits "cljs.core." value)
+                  (emits-set x))
        :else (emit-constant* x)))
    :cljs
    (defn emit-constant-no-meta [x]
@@ -1778,16 +1796,19 @@
 (defn emit-constants-table [table]
   (emitln "goog.provide('" (munge ana/constants-ns-sym) "');")
   (emitln "goog.require('cljs.core');")
-  (doseq [[sym value] table]
-    (let [ns   (namespace sym)
-          name (name sym)]
+  (doseq [[constant value] table]
+    (let [#_#_ns   (namespace constant)
+          #_#_name (name constant)]
       (emits "cljs.core." value " = ")
       (cond
-        (keyword? sym) (emits-keyword sym)
-        (symbol? sym) (emits-symbol sym)
+        (keyword? constant) (emits-keyword constant)
+        (symbol? constant) (emits-symbol constant)
+        (map? constant) (emits-map constant)
+        (vector? constant) (emits-vector constant)
+        (set? constant) (emits-set constant)
         :else (throw
                 (ex-info
-                  (str "Cannot emit constant for type " (type sym))
+                  (str "Cannot emit constant for type " (type constant))
                   {:error :invalid-constant-type})))
       (emits ";\n"))))
 
