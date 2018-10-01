@@ -1803,29 +1803,36 @@
   (emitln "goog.provide('" (munge ana/constants-ns-sym) "');")
   (emitln "goog.require('cljs.core');")
   (doseq [[constant value] table]
-    (let [#_#_ns   (namespace constant)
-          #_#_name (name constant)]
-      (emits "cljs.core." value " = ")
-      (cond
-        (keyword? constant) (emits-keyword constant)
-        (symbol? constant) (emits-symbol constant)
-        (map? constant) (do
-                          (emits "new cljs.core.Delay(function (){ return ")
-                          (emits-map constant)
-                          (emits ";}, null)"))
-        (vector? constant) (do
-                             (emits "new cljs.core.Delay(function (){ return ")
-                             (emits-vector constant)
-                             (emits ";}, null)"))
-        (set? constant) (do
-                          (emits "new cljs.core.Delay(function (){ return ")
-                          (emits-set constant)
-                          (emits ";}, null)"))
-        :else (throw
-                (ex-info
-                  (str "Cannot emit constant for type " (type constant))
-                  {:error :invalid-constant-type})))
-      (emits ";\n"))))
+    (when (or (keyword? constant)
+              (symbol? constant))
+      (let [#_#_ns (namespace constant)
+            #_#_name (name constant)]
+        (emits "cljs.core." value " = ")
+        (cond
+          (keyword? constant) (emits-keyword constant)
+          (symbol? constant) (emits-symbol constant))
+        (emits ";\n"))))
+  (doseq [[constant value] table]
+    (when (or (map? constant)
+              (vector? constant)
+              (set? constant))
+      (let [#_#_ns (namespace constant)
+            #_#_name (name constant)]
+        (emits "cljs.core." value " = ")
+        (cond
+          (map? constant) (do
+                            (emits "new cljs.core.Delay(function (){ return ")
+                            (emits-map constant)
+                            (emits ";}, null)"))
+          (vector? constant) (do
+                               (emits "new cljs.core.Delay(function (){ return ")
+                               (emits-vector constant)
+                               (emits ";}, null)"))
+          (set? constant) (do
+                            (emits "new cljs.core.Delay(function (){ return ")
+                            (emits-set constant)
+                            (emits ";}, null)")))
+        (emits ";\n")))))
 
 #?(:clj
    (defn emit-constants-table-to-file [table dest]
