@@ -288,15 +288,21 @@
                      (emit-record-value ns name #(emit-constant (into {} x))))
        (map? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
                                     (get (::ana/constant-table @env/*compiler*) x))]
-                  (emits "cljs.core." value)
+                  (do
+                    (emits "cljs.core.deref(cljs.core." value)
+                    (emits ")"))
                   (emits-map x))
        (vector? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
                                        (get (::ana/constant-table @env/*compiler*) x))]
-                     (emits "cljs.core." value)
+                     (do
+                       (emits "cljs.core.deref(cljs.core." value)
+                       (emits ")"))
                      (emits-vector x))
        (set? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
                                     (get (::ana/constant-table @env/*compiler*) x))]
-                  (emits "cljs.core." value)
+                  (do
+                    (emits "cljs.core.deref(cljs.core." value)
+                    (emits ")"))
                   (emits-set x))
        :else (emit-constant* x)))
    :cljs
@@ -1803,9 +1809,18 @@
       (cond
         (keyword? constant) (emits-keyword constant)
         (symbol? constant) (emits-symbol constant)
-        (map? constant) (emits-map constant)
-        (vector? constant) (emits-vector constant)
-        (set? constant) (emits-set constant)
+        (map? constant) (do
+                          (emits "new cljs.core.Delay(function (){ return ")
+                          (emits-map constant)
+                          (emits ";}, null)"))
+        (vector? constant) (do
+                             (emits "new cljs.core.Delay(function (){ return ")
+                             (emits-vector constant)
+                             (emits ";}, null)"))
+        (set? constant) (do
+                          (emits "new cljs.core.Delay(function (){ return ")
+                          (emits-set constant)
+                          (emits ";}, null)"))
         :else (throw
                 (ex-info
                   (str "Cannot emit constant for type " (type constant))
