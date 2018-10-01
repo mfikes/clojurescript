@@ -548,9 +548,9 @@
         name   (cond
                 (keyword? value) (subs (str value) 1)
                 (symbol? value) (str value)
-                (map? value) (str "map-" (swap! coll-constant-id-counter inc))
-                (vector? value) (str "vec-" (swap! coll-constant-id-counter inc))
-                (set? value) (str "set-" (swap! coll-constant-id-counter inc)))
+                (map? value) (str (swap! coll-constant-id-counter inc))
+                (vector? value) (str (swap! coll-constant-id-counter inc))
+                (set? value) (str (swap! coll-constant-id-counter inc)))
         name   (if (= "." name)
                  "_DOT_"
                  (-> name
