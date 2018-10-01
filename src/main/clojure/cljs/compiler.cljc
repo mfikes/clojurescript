@@ -288,21 +288,28 @@
                      (emit-record-value ns name #(emit-constant (into {} x))))
        (map? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
                                     (get (::ana/constant-table @env/*compiler*) x))]
-                  (do
-                    (emits "cljs.core.deref(cljs.core." value)
-                    (emits ")"))
+                  (if (and (not-any? meta (keys x))
+                           (not-any? meta (vals x)))
+                    (do
+                      (emits "cljs.core.deref(cljs.core." value)
+                      (emits ")"))
+                    (emits-map x))
                   (emits-map x))
        (vector? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
                                        (get (::ana/constant-table @env/*compiler*) x))]
-                     (do
-                       (emits "cljs.core.deref(cljs.core." value)
-                       (emits ")"))
+                     (if (not-any? meta x)                  ; really, want to check recursively
+                       (do
+                         (emits "cljs.core.deref(cljs.core." value)
+                         (emits ")"))
+                       (emits-vector x))
                      (emits-vector x))
        (set? x) (if-let [value (and (-> @env/*compiler* :options :emit-constants)
                                     (get (::ana/constant-table @env/*compiler*) x))]
-                  (do
-                    (emits "cljs.core.deref(cljs.core." value)
-                    (emits ")"))
+                  (if (not-any? meta x)                     ; really, want to check recursively
+                    (do
+                      (emits "cljs.core.deref(cljs.core." value)
+                      (emits ")"))
+                    (emits-set x))
                   (emits-set x))
        :else (emit-constant* x)))
    :cljs
