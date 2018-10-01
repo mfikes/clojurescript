@@ -3643,7 +3643,8 @@
                                 :keys ks :vals vs
                                 :children [:keys :vals]
                                 :tag 'cljs.core/IMap})]
-    (when (constant-value? ast)
+    (when (and (nil? (meta form))
+               (constant-value? ast))
       (register-constant! env form))
     ast))
 
@@ -3660,7 +3661,8 @@
   (let [expr-env (assoc env :context :expr)
         items (disallowing-recur (mapv #(analyze expr-env %) form))
         ast (analyze-wrap-meta {:op :vector :env env :form form :items items :children [:items] :tag 'cljs.core/IVector})]
-    (when (constant-value? ast)
+    (when (and (nil? (meta form))
+               (constant-value? ast))
       (register-constant! env form))
     ast))
 
@@ -3669,7 +3671,8 @@
   (let [expr-env (assoc env :context :expr)
         items (disallowing-recur (mapv #(analyze expr-env %) form))
         ast (analyze-wrap-meta {:op :set :env env :form form :items items :children [:items] :tag 'cljs.core/ISet})]
-    (when (constant-value? ast)
+    (when (and (nil? (meta form))
+               (constant-value? ast))
       (register-constant! env form))
     ast))
 
