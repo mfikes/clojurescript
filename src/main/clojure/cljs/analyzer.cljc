@@ -532,6 +532,8 @@
                        hex)]
              (str "_u" hex "_"))))
 
+(def ^:private coll-constant-id-counter (atom 0))
+
 (defn gen-constant-id [value]
   (let [prefix (cond
                  (keyword? value) "cst$kw$"
@@ -546,9 +548,9 @@
         name   (cond
                 (keyword? value) (subs (str value) 1)
                 (symbol? value) (str value)
-                (map? value) (str "map-" (hash value))
-                (vector? value) (str "vec-" (hash value))
-                (set? value) (str "set-" (hash value)))
+                (map? value) (str "map-" (swap! coll-constant-id-counter inc))
+                (vector? value) (str "vec-" (swap! coll-constant-id-counter inc))
+                (set? value) (str "set-" (swap! coll-constant-id-counter inc)))
         name   (if (= "." name)
                  "_DOT_"
                  (-> name
