@@ -5697,7 +5697,7 @@ reduces them without incurring seq initialization"
 (declare map-entry?)
 
 (defn vec
-  "Creates a new vector containing the contents of coll. JavaScript arrays
+  "Returns a vector containing the contents of coll. JavaScript arrays
   will be aliased and should not be modified."
   [coll]
   (cond
