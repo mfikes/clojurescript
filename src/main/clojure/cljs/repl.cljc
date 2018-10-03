@@ -1382,7 +1382,8 @@
   the bindings of the recursion point to the values of the exprs.
   Execution then jumps back to the recursion point, a loop or fn method."}
     set! {:forms[(set! var-symbol expr)
-                 (set! (.- instance-expr instanceFieldName-symbol) expr)]
+                 (set! (.- instance-expr instanceFieldName-symbol) expr)
+                 (set! instance-expr -instanceFieldName-symbol expr)]
           :url "vars#set"
           :doc "Used to set vars and JavaScript object fields"}
     throw {:forms [(throw expr)]
