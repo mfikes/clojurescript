@@ -1565,6 +1565,8 @@ reduces them without incurring seq initialization"
       (set! i (inc i))
       ret)))
 
+(declare array-chunk)
+
 (deftype IndexedSeq [arr i meta]
   Object
   (toString [coll]
@@ -1635,6 +1637,21 @@ reduces them without incurring seq initialization"
 
   IEmptyableCollection
   (-empty [coll] (.-EMPTY List))
+
+  IChunkedSeq
+  (-chunked-first [coll]
+    (array-chunk arr i (min (alength arr) (+ 32 (- i (js-mod i 32))))))
+  (-chunked-rest [coll]
+    (let [end (+ 32 (- i (js-mod i 32)))]
+      (if (< end (alength arr))
+        (IndexedSeq. arr end nil)
+        ())))
+
+  IChunkedNext
+  (-chunked-next [coll]
+    (let [end (+ 32 (- i (js-mod i 32)))]
+      (when (< end (alength arr))
+        (IndexedSeq. arr end nil))))
 
   IReduce
   (-reduce [coll f]
