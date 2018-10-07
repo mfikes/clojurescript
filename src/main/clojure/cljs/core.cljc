@@ -2285,12 +2285,17 @@
 
   (test-constant1 ... test-constantN)  result-expr
 
+  If the expression is equal to a test-constant, the corresponding
+  result-expr is returned. A single default expression can follow the
+  clauses, and its value will be returned if no clause matches. If no
+  default expression is provided and no clause matches, an Error is thrown.
+
   The test-constants are not evaluated. They must be compile-time
-  literals, and need not be quoted.  If the expression is equal to a
-  test-constant, the corresponding result-expr is returned. A single
-  default expression can follow the clauses, and its value will be
-  returned if no clause matches. If no default expression is provided
-  and no clause matches, an Error is thrown.
+  literals, and need not be quoted. The only exception to this holds for
+  the use of test-constants that are symbols resolving to constant Vars
+  (Vars with ^:const metadata). In this case, the constant's value is inlined.
+  Please note that this behavior differs from Clojure, which will not inline
+  the value.
 
   Unlike cond and condp, case does a constant-time dispatch, the
   clauses are not considered sequentially.  All manner of constant
