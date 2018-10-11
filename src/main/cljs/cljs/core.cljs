@@ -1333,16 +1333,18 @@
         h1 (m3-mix-H1 h1 k1)]
     (m3-fmix h1 count)))
 
+(declare iter)
+
 (defn ^number hash-ordered-coll
   "Returns the hash code, consistent with =, for an external ordered
    collection implementing Iterable.
    See http://clojure.org/data_structures#hash for full algorithms."
   [coll]
-  (loop [n 0 hash-code 1 coll (seq coll)]
-    (if-not (nil? coll)
-      (recur (inc n) (bit-or (+ (imul 31 hash-code) (hash (first coll))) 0)
-        (next coll))
-      (mix-collection-hash hash-code n))))
+  (let [it (iter coll)]
+    (loop [n 0 hash-code 1]
+      (if ^boolean (.hasNext it)
+        (recur (inc n) (bit-or (+ (imul 31 hash-code) (hash (.next it))) 0))
+        (mix-collection-hash hash-code n)))))
 
 (def ^:private empty-ordered-hash
   (mix-collection-hash 1 0))
@@ -1354,10 +1356,11 @@
      (hash-ordered-coll [k v]).
    See http://clojure.org/data_structures#hash for full algorithms."
   [coll]
-  (loop [n 0 hash-code 0 coll (seq coll)]
-    (if-not (nil? coll)
-      (recur (inc n) (bit-or (+ hash-code (hash (first coll))) 0) (next coll))
-      (mix-collection-hash hash-code n))))
+  (let [it (iter coll)]
+    (loop [n 0 hash-code 0]
+      (if ^boolean (.hasNext it)
+        (recur (inc n) (bit-or (+ hash-code (hash (.next it))) 0))
+        (mix-collection-hash hash-code n)))))
 
 (def ^:private empty-unordered-hash
   (mix-collection-hash 0 0))
@@ -2493,7 +2496,7 @@ reduces them without incurring seq initialization"
 (defn- iter-reduce
   ([coll f]
    (let [iter (-iterator coll)]
-     (if (.hasNext iter)
+     (if ^boolean (.hasNext iter)
        (let [init (.next iter)]
          (loop [acc init]
            (if ^boolean (.hasNext iter)
@@ -4105,7 +4108,7 @@ reduces them without incurring seq initialization"
     (when ^boolean (.hasNext iter)
       (let [arr (array)]
         (loop [n 0]
-          (if (and (.hasNext iter) (< n 32))
+          (if (and ^boolean (.hasNext iter) (< n 32))
             (do
               (aset arr n (.next iter))
               (recur (inc n)))
@@ -6151,7 +6154,7 @@ reduces them without incurring seq initialization"
 (deftype PersistentQueueIter [^:mutable fseq riter]
   Object
   (hasNext [_]
-    (or (and (some? fseq) (seq fseq)) (and (some? riter) (.hasNext riter))))
+    (or (and (some? fseq) (seq fseq)) (and (some? riter) ^boolean (.hasNext riter))))
   (next [_]
     (cond
       (some? fseq)
@@ -6492,7 +6495,7 @@ reduces them without incurring seq initialization"
 (deftype RecordIter [^:mutable i record base-count fields ext-map-iter]
   Object
   (hasNext [_]
-    (or (< i base-count) (.hasNext ext-map-iter)))
+    (or (< i base-count) ^boolean (.hasNext ext-map-iter)))
   (next [_]
     (if (< i base-count)
       (let [k (nth fields i)]
