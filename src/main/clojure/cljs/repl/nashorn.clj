@@ -26,10 +26,15 @@
     (import 'jdk.nashorn.api.scripting.NashornException)
     ;; Implementation
 
+    (def ^:private deprecated? (let [jdk-ver (System/getProperty "java.version")]
+                                 (not-any? #(string/starts-with? jdk-ver %) #{"1.8." "9." "10."})))
+
     (defn create-engine
       ([] (create-engine nil))
       ([{:keys [code-cache] :or {code-cache true}}]
-       (let [args (when code-cache ["-pcc"])
+       (let [args (cond-> []
+                    code-cache (conj "-pcc")
+                    deprecated? (conj "--no-deprecation-warning"))
              factories (.getEngineFactories (ScriptEngineManager.))
              factory (get (zipmap (map #(.getEngineName %) factories) factories) "Oracle Nashorn")]
          (if-let [engine (if-not (empty? args)
