@@ -10394,7 +10394,13 @@ reduces them without incurring seq initialization"
 
   IPending
   (-realized? [x]
-    (not f)))
+    (not f))
+
+  IPrintWithWriter
+  (-pr-writer [x writer opts]
+    (-write writer "#object[cljs.core.Delay ")
+    (pr-writer {:status (if (nil? f) :ready :pending), :val value} writer opts)
+    (-write writer "]")))
 
 (defn ^boolean delay?
   "returns true if x is a Delay created with delay"
