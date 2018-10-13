@@ -1626,6 +1626,12 @@
   (is (thrown? js/Error ((not empty?) "foo")))
   (is (thrown? js/Error ((not empty?) ""))))
 
+(deftest test-cljs-2934
+  (let [x (delay 1)]
+    (is (= "#object[cljs.core.Delay {:status :pending, :val nil}]" (pr-str x)))
+    (force x)
+    (is (= "#object[cljs.core.Delay {:status :ready, :val 1}]" (pr-str x)))))
+
 (deftest test-cljs-2943
   (let [m1 {:a 2, :b 3, :c 5}
         m2 {:a 7, :b 11, :d 13, :e 17}
