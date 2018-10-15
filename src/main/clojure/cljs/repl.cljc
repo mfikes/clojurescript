@@ -601,7 +601,8 @@
             compiled (binding [ana/*reload-macros* true]
                        (cljsc/compile src
                          (assoc opts
-                           :output-file (cljsc/src-file->target-file src)
+                           :output-file (cljsc/src-file->target-file
+                                          src (dissoc opts :output-dir))
                            :force true
                            :mode :interactive)))]
         ;; copy over the original source file if source maps enabled
