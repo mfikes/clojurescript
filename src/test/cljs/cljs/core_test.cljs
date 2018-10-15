@@ -1625,3 +1625,7 @@
   (is (false? ((comp not empty?) "")))
   (is (thrown? js/Error ((not empty?) "foo")))
   (is (thrown? js/Error ((not empty?) ""))))
+
+(deftest test-cljs-2933
+  (is (= "#object[cljs.core.Atom {:val 1}]" (pr-str (atom 1))))
+  (is (= "#object[cljs.core.Volatile {:val 2}]" (pr-str (volatile! 2)))))
