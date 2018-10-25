@@ -9032,9 +9032,9 @@ reduces them without incurring seq initialization"
     (loop [ret {} keys (seq keyseq)]
       (if keys
         (let [key   (first keys)
-              entry (get map key ::not-found)]
+              entry (get map key lookup-sentinel)]
           (recur
-           (if (not= entry ::not-found)
+           (if-not (identical? entry lookup-sentinel)
              (assoc ret key entry)
              ret)
            (next keys)))

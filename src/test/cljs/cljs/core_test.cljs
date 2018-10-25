@@ -1637,3 +1637,9 @@
     (is (= m4 (merge-with + (sorted m1) (sorted m2) m3)))
     (is (= m4 (merge-with + m1 (sorted m2) m3)))
     (is (= m4 (merge-with + m1 (sorted m2) (sorted m3))))))
+
+(deftest test-cljs-2944
+  (let [m {:foo 100, :bar false, :baz true}]
+    (is (= {:foo 100, :bar false} (select-keys m [:foo :bar]))))
+  (let [m {:a 1, :b 2, :c 3, :d 4, :e 5, :f 7}]
+    (is (= {:b 2, :c 3, :f 7} (select-keys m [:h :c :b :f :g])))))
