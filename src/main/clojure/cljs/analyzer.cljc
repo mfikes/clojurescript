@@ -2018,10 +2018,25 @@
   (binding [*recur-frames* recur-frames]
     (analyze env form)))
 
+(defn- process-rest-arg
+  "Returns a tuple of a Boolean indicating whether a rest arg was found and
+  the param names with & removed, adding seq tag meta to rest arg if needed."
+  [param-names]
+  (reduce (fn [[rest? param-names] param-name]
+            (if #?(:clj  (= param-name '&)
+                   :cljs (symbol-identical? param-name '&))
+              [true param-names]
+              [rest? (conj param-names
+                       (cond-> param-name
+                         (and rest?
+                              (not (contains? (meta param-name) :tag))) (with-meta {:tag 'seq})))]))
+    [false []]
+    param-names))
+
 (defn- analyze-fn-method [env locals form type analyze-body?]
   (let [param-names     (first form)
-        variadic        (boolean (some '#{&} param-names))
-        param-names     (vec (remove '#{&} param-names))
+        [variadic
+         param-names]   (process-rest-arg param-names)
         body            (next form)
         step            (analyze-fn-method-param env)
         step-init       [locals []]
