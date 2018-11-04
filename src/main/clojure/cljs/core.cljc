@@ -3115,7 +3115,10 @@
   ([sym method]
    (variadic-fn* sym method true))
   ([sym [arglist & body :as method] solo]
-   (core/let [sig (remove '#{&} arglist)
+   (core/let [sig     (vec (remove '#{&} arglist))
+              sig     (if (contains? (meta (peek sig)) :tag)
+                        sig
+                        (conj (pop sig) (with-meta (peek sig) {:tag 'seq})))
               restarg (gensym "seq")]
      (core/letfn [(get-delegate []
                     'cljs$core$IFn$_invoke$arity$variadic)
@@ -3138,7 +3141,7 @@
                             (. self# (~(get-delegate) (seq ~restarg))))))))]
        `(do
           (set! (. ~sym ~(get-delegate-prop))
-            (fn (~(vec sig) ~@body)))
+            (fn (~sig ~@body)))
           ~@(core/when solo
               `[(set! (. ~sym ~'-cljs$lang$maxFixedArity)
                   ~(core/dec (count sig)))])
