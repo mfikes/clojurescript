@@ -1650,3 +1650,7 @@
     (is (= m4 (merge-with + (sorted m1) (sorted m2) m3)))
     (is (= m4 (merge-with + m1 (sorted m2) m3)))
     (is (= m4 (merge-with + m1 (sorted m2) (sorted m3))))))
+
+(deftest test-cljs-2959
+  (is (= {:a true} (meta (sort (with-meta (range 10) {:a true})))))
+  (is (= {:a true} (meta (sort-by :a (with-meta (seq [{:a 5} {:a 2} {:a 3}]) {:a true}))))))
