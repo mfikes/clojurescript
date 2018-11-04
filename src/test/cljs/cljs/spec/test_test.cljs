@@ -109,3 +109,11 @@
                      (is (nil? @#'stest/*instrument-enabled*))
                      (fn-2953 "abc"))))
   (is @#'stest/*instrument-enabled*))
+
+(s/fdef cljs.core/= :args (s/+ any?))
+
+(deftest test-cljs-2956
+  (stest/instrument 'cljs.core/=)
+  (is (true? (= 1)))
+  (is (thrown? js/Error (=)))
+  (stest/unstrument 'cljs.core/=))
