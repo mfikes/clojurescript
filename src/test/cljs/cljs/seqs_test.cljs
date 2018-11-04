@@ -220,3 +220,21 @@
 (deftest test-cljs-2911
   (testing "partition-by works correclty with infinite seqs"
     (is (= (first (second (partition-by zero? (range)))) 1))))
+
+(defn foo-2961 [& xs] (if xs 1 2))
+
+(defn bar-2961 [x & xs] (if xs 1 2))
+
+(defn baz-2961 ([x]) ([x & xs] (if xs 1 2)))
+
+(deftest test-cljs-2961
+  (testing "rest arg is inferred as having seq type"
+    (with-redefs [truth_ (fn [_] (throw (js/Error)))]
+      ((fn [& xs] (if xs 1 2)) 2)
+      ((fn [& xs] (if xs 1 2)))
+      ((fn [x & xs] (if xs 1 2)) 1 2)
+      ((fn ([x]) ([x & xs] (if xs 1 2))) 1 2)
+      (foo-2961 1)
+      (foo-2961)
+      (bar-2961 1 2)
+      (baz-2961 1 2))))
