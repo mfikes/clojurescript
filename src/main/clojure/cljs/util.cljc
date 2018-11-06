@@ -406,3 +406,24 @@
                  (or (.endsWith path ".json")
                      (.endsWith path ".js"))))
        fseq))))
+
+
+;; Copied from clojure.tools.gitlibs
+
+(def ^:private GITLIBS-CACHE-DIR
+  (delay
+    (.getCanonicalPath
+      (let [env (System/getenv "GITLIBS")]
+        (if (string/blank? env)
+          (io/file (System/getProperty "user.home") ".gitlibs")
+          (io/file env))))))
+
+(defn- gitlibs-cache-dir
+  "Returns the gitlibs cache dir, a string."
+  []
+  @GITLIBS-CACHE-DIR)
+
+(defn gitlibs-src?
+  "Returns true if the file comes from the gitlibs cache."
+  [file]
+  (string/starts-with? (path file) (gitlibs-cache-dir)))

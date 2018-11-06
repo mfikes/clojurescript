@@ -1133,7 +1133,8 @@
                              {:line 1 :column 1})
                            identity opts)))
                maybe-load-user-file #(when-let [user-resource (util/ns->source 'user)]
-                                       (when (= "file" (.getProtocol ^URL user-resource))
+                                       (when (and (= "file" (.getProtocol ^URL user-resource))
+                                                  (not (util/gitlibs-src? user-resource)))
                                          (load-file repl-env (io/file user-resource) opts)))
                read-eval-print
                (fn []

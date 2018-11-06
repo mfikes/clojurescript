@@ -47,28 +47,6 @@
            [com.sun.nio.file SensitivityWatchEventModifier]
            [com.google.common.base Throwables]))
 
-;; Copied from clojure.tools.gitlibs
-
-(def ^:private GITLIBS-CACHE-DIR
-  (delay
-    (.getCanonicalPath
-      (let [env (System/getenv "GITLIBS")]
-        (if (string/blank? env)
-          (io/file (System/getProperty "user.home") ".gitlibs")
-          (io/file env))))))
-
-(defn- gitlibs-cache-dir
-  "Returns the gitlibs cache dir, a string."
-  []
-  @GITLIBS-CACHE-DIR)
-
-(defn- gitlibs-src?
-  "Returns true if the file comes from the gitlibs cache."
-  [file]
-  #_(string/starts-with? (util/path file) (gitlibs-cache-dir))
-  ;; NOTE: does not work on first build see CLJS-2765
-  false)
-
 (def name-chars (map char (concat (range 48 57) (range 65 90) (range 97 122))))
 
 (defn random-char []
@@ -638,7 +616,8 @@
     (if output-file
       (let [out-file (io/file (util/output-directory opts) output-file)]
         (if (and (aot-cache? opts)
-                 (gitlibs-src? file))
+                 ;; NOTE: does not work on first build see CLJS-2765
+                 #_(util/gitlibs-src? file))
           (let [cacheable  (ana/cacheable-files file (util/ext file) opts)
                 cache-path (ana/cache-base-path (util/path file) opts)]
             (if (not (.exists (:output-file cacheable)))
