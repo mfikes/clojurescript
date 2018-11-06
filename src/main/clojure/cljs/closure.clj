@@ -2572,29 +2572,31 @@
      (when env/*compiler*
        (:options @env/*compiler*))))
   ([modules opts]
-   (let [node-modules (io/file "node_modules")]
-     (if (and (not (empty? modules)) (.exists node-modules) (.isDirectory node-modules))
-       (let [modules (into #{} (map name) modules)
-             deps-file (io/file (util/output-directory opts) "cljs$node_modules.js")
-             old-contents (when (.exists deps-file)
-                            (slurp deps-file))
-             new-contents (let [sb (StringBuffer.)]
-                            (run! #(.append sb (str "require('" % "');\n")) modules)
-                            (str sb))]
-         (util/mkdirs deps-file)
-         (if (or (not= old-contents new-contents)
-                 (nil? env/*compiler*)
-                 (nil? (::transitive-dep-set @env/*compiler*)))
-           (do
-             (spit deps-file new-contents)
-             (let [transitive-js (node-inputs [{:file (.getAbsolutePath deps-file)}] opts)]
-               (when-not (nil? env/*compiler*)
-                 (swap! env/*compiler* update-in [::transitive-dep-set]
-                   assoc modules transitive-js))
-               transitive-js))
-           (when-not (nil? env/*compiler*)
-             (get-in @env/*compiler* [::transitive-dep-set modules]))))
-       []))))
+   (util/measure (:compiler-stats opts)
+     "Index Node modules"
+     (let [node-modules (io/file "node_modules")]
+       (if (and (not (empty? modules)) (.exists node-modules) (.isDirectory node-modules))
+         (let [modules      (into #{} (map name) modules)
+               deps-file    (io/file (util/output-directory opts) "cljs$node_modules.js")
+               old-contents (when (.exists deps-file)
+                              (slurp deps-file))
+               new-contents (let [sb (StringBuffer.)]
+                              (run! #(.append sb (str "require('" % "');\n")) modules)
+                              (str sb))]
+           (util/mkdirs deps-file)
+           (if (or (not= old-contents new-contents)
+                   (nil? env/*compiler*)
+                   (nil? (::transitive-dep-set @env/*compiler*)))
+             (do
+               (spit deps-file new-contents)
+               (let [transitive-js (node-inputs [{:file (.getAbsolutePath deps-file)}] opts)]
+                 (when-not (nil? env/*compiler*)
+                   (swap! env/*compiler* update-in [::transitive-dep-set]
+                     assoc modules transitive-js))
+                 transitive-js))
+             (when-not (nil? env/*compiler*)
+               (get-in @env/*compiler* [::transitive-dep-set modules]))))
+         [])))))
 
 (defn- node-file-seq->libs-spec*
   [module-fseq]
@@ -2660,8 +2662,10 @@
      (when env/*compiler*
        (:options @env/*compiler*))))
   ([opts]
-   (let [module-fseq (util/module-file-seq)]
-     (node-file-seq->libs-spec module-fseq))))
+   (util/measure (:compiler-stats opts)
+     "Index Node modules dir"
+     (let [module-fseq (util/module-file-seq)]
+       (node-file-seq->libs-spec module-fseq)))))
 
 (defn preprocess-js
   "Given js-module map, apply preprocessing defined by :preprocess value in the map."
