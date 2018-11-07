@@ -19,7 +19,7 @@
   (is (= (stest/unstrument `h-cljs-1812)
         []))
 
-  (stest/check `h-cljs-1812 {:clojure.test.check/opts {:num-tests 1}})
+  (stest/check `h-cljs-1812 {:clojure.spec.test.check/opts {:num-tests 1}})
 
   ; Calling h-cljs-1812 with an argument of the wrong type shouldn't throw,
   ; because the function should not have been instrumented by stest/check.
@@ -109,3 +109,16 @@
                      (is (nil? @#'stest/*instrument-enabled*))
                      (fn-2953 "abc"))))
   (is @#'stest/*instrument-enabled*))
+
+(defn cljs-2964 [x] true)
+(s/fdef cljs-2964 :args (s/cat :x int?) :ret true?)
+
+(deftest test-cljs-2964
+  (let [check-res
+        (stest/check `cljs-2964 {:clojure.spec.test.check/opts {:num-tests 1}})]
+    (is (seq check-res))
+    (is (every? (fn [res]
+                  (= 1 (-> res
+                           :clojure.spec.test.check/ret
+                           :num-tests)))
+                check-res))))

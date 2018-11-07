@@ -243,7 +243,7 @@ is not specified, check all checkable vars. If a symbol identifies a
 namespace then all symbols in that namespace will be enumerated.
 
 The opts map includes the following optional keys, where stc
-aliases clojure.test.check:
+aliases clojure.spec.test.check:
 
 ::stc/opts  opts to flow through test.check/quick-check
 :gen        map from spec names to generator overrides

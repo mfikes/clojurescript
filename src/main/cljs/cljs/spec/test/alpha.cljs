@@ -16,7 +16,6 @@
     [cljs.pprint :as pp]
     [cljs.spec.alpha :as s]
     [cljs.spec.gen.alpha :as gen]
-    [clojure.test.check :as stc]
     [clojure.test.check.properties]))
 
 (defn distinct-by
@@ -219,7 +218,7 @@ with explain-data + ::s/failure."
             true))))))
 
 (defn- quick-check
-  [f specs {gen :gen opts ::stc/opts}]
+  [f specs {gen :gen opts :clojure.spec.test.check/opts}]
   (let [{:keys [num-tests] :or {num-tests 1000}} opts
         g (try (s/gen (:args specs) gen) (catch js/Error t t))]
     (if (instance? js/Error g)
@@ -231,7 +230,7 @@ with explain-data + ::s/failure."
   "Builds spec result map."
   [check-sym spec test-check-ret]
   (merge {:spec spec
-          ::stc/ret test-check-ret}
+          :clojure.spec.test.check/ret test-check-ret}
     (when check-sym
       {:sym check-sym})
     (when-let [result (-> test-check-ret :result)]
@@ -273,10 +272,10 @@ with explain-data + ::s/failure."
 suitable for summary use."
   [x]
   (if (:failure x)
-    (-> (dissoc x ::stc/ret)
+    (-> (dissoc x :clojure.spec.test.check/ret)
       (update :spec s/describe)
       (update :failure unwrap-failure))
-    (dissoc x :spec ::stc/ret)))
+    (dissoc x :spec :clojure.spec.test.check/opts)))
 
 (defn summarize-results
   "Given a collection of check-results, e.g. from 'check', pretty
