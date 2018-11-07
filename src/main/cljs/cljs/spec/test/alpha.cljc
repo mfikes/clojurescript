@@ -247,7 +247,7 @@ is not specified, check all checkable vars. If a symbol identifies a
 namespace then all symbols in that namespace will be enumerated.
 
 The opts map includes the following optional keys, where stc
-aliases clojure.test.check:
+aliases clojure.spec.test.check:
 
 ::stc/opts  opts to flow through test.check/quick-check
 :gen        map from spec names to generator overrides
@@ -281,12 +281,17 @@ spec itself will have an ::s/failure value in ex-data:
   ([sym-or-syms opts]
    (let [syms (sym-or-syms->syms (form->sym-or-syms sym-or-syms))
          opts-sym (gensym "opts")]
-     `(let [~opts-sym ~opts]
-        [~@(->> syms
-             (filter (checkable-syms* opts))
-             (map
-               (fn [sym]
-                 (do `(check-1 '~sym nil nil ~opts-sym)))))]))))
+     `(if (and (cljs.core/exists? clojure.test.check)
+               (cljs.core/exists? clojure.test.check.properties))
+        (let [~opts-sym ~opts]
+          [~@(->> syms
+                  (filter (checkable-syms* opts))
+                  (map
+                   (fn [sym]
+                     (do `(check-1 '~sym nil nil ~opts-sym)))))])
+        (throw
+         (js/Error. (str "Require clojure.test.check and "
+                         "clojure.test.check.properties before calling check.")))))))
 
 (defmacro ^:private maybe-setup-static-dispatch [f ret arity]
   (let [arity-accessor (symbol (str ".-cljs$core$IFn$_invoke$arity$" arity))
