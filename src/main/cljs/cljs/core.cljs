@@ -4426,56 +4426,56 @@ reduces them without incurring seq initialization"
 
 (defn reset!
   "Sets the value of atom to newval without regard for the
-  current value. Returns new-value."
-  [a new-value]
-  (if (instance? Atom a)
-    (let [validate (.-validator a)]
+  current value. Returns newval."
+  [atom newval]
+  (if (instance? Atom atom)
+    (let [validate (.-validator atom)]
       (when-not (nil? validate)
-        (when-not (validate new-value)
+        (when-not (validate newval)
           (throw (js/Error. "Validator rejected reference state"))))
-      (let [old-value (.-state a)]
-        (set! (.-state a) new-value)
-        (when-not (nil? (.-watches a))
-          (-notify-watches a old-value new-value))
-        new-value))
-    (-reset! a new-value)))
+      (let [old-value (.-state atom)]
+        (set! (.-state atom) newval)
+        (when-not (nil? (.-watches atom))
+          (-notify-watches atom old-value newval))
+        newval))
+    (-reset! atom newval)))
 
 (defn reset-vals!
   "Sets the value of atom to newval. Returns [old new], the value of the
    atom before and after the reset."
   {:added "1.9"}
-  [a new-value]
-  (let [validate (.-validator a)]
+  [atom newval]
+  (let [validate (.-validator atom)]
     (when-not (nil? validate)
-      (when-not (validate new-value)
+      (when-not (validate newval)
         (throw (js/Error. "Validator rejected reference state"))))
-    (let [old-value (.-state a)]
-      (set! (.-state a) new-value)
-      (when-not (nil? (.-watches a))
-        (-notify-watches a old-value new-value))
-      [old-value new-value])))
+    (let [old-value (.-state atom)]
+      (set! (.-state atom) newval)
+      (when-not (nil? (.-watches atom))
+        (-notify-watches atom old-value newval))
+      [old-value newval])))
 
 (defn swap!
   "Atomically swaps the value of atom to be:
   (apply f current-value-of-atom args). Note that f may be called
   multiple times, and thus should be free of side effects.  Returns
   the value that was swapped in."
-  ([a f]
-   (if (instance? Atom a)
-     (reset! a (f (.-state a)))
-     (-swap! a f)))
-  ([a f x]
-   (if (instance? Atom a)
-     (reset! a (f (.-state a) x))
-     (-swap! a f x)))
-  ([a f x y]
-   (if (instance? Atom a)
-     (reset! a (f (.-state a) x y))
-     (-swap! a f x y)))
-  ([a f x y & more]
-   (if (instance? Atom a)
-     (reset! a (apply f (.-state a) x y more))
-     (-swap! a f x y more))))
+  ([atom f]
+   (if (instance? Atom atom)
+     (reset! atom (f (.-state atom)))
+     (-swap! atom f)))
+  ([atom f x]
+   (if (instance? Atom atom)
+     (reset! atom (f (.-state atom) x))
+     (-swap! atom f x)))
+  ([atom f x y]
+   (if (instance? Atom atom)
+     (reset! atom (f (.-state atom) x y))
+     (-swap! atom f x y)))
+  ([atom f x y & more]
+   (if (instance? Atom atom)
+     (reset! atom (apply f (.-state atom) x y more))
+     (-swap! atom f x y more))))
 
 (defn swap-vals!
   "Atomically swaps the value of atom to be:
@@ -4483,22 +4483,22 @@ reduces them without incurring seq initialization"
   multiple times, and thus should be free of side effects.
   Returns [old new], the value of the atom before and after the swap."
   {:added "1.9"}
-  ([a f]
-   (reset-vals! a (f (.-state a))))
-  ([a f x]
-   (reset-vals! a (f (.-state a) x)))
-  ([a f x y]
-   (reset-vals! a (f (.-state a) x y)))
-  ([a f x y & more]
-   (reset-vals! a (apply f (.-state a) x y more))))
+  ([atom f]
+   (reset-vals! atom (f (.-state atom))))
+  ([atom f x]
+   (reset-vals! atom (f (.-state atom) x)))
+  ([atom f x y]
+   (reset-vals! atom (f (.-state atom) x y)))
+  ([atom f x y & more]
+   (reset-vals! atom (apply f (.-state atom) x y more))))
 
 (defn compare-and-set!
   "Atomically sets the value of atom to newval if and only if the
   current value of the atom is equal to oldval. Returns true if
   set happened, else false."
-  [^not-native a oldval newval]
-  (if (= (-deref a) oldval)
-    (do (reset! a newval) true)
+  [^not-native atom oldval newval]
+  (if (= (-deref atom) oldval)
+    (do (reset! atom newval) true)
     false))
 
 (defn set-validator!
