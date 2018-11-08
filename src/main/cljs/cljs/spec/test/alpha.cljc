@@ -16,6 +16,12 @@
 
 (defonce ^:private instrumented-vars (atom #{}))
 
+(defn- eval* [form]
+  (eval #?(:clj  `(do
+                    (clojure.core/refer-clojure)
+                    ~form)
+           :cljs form)))
+
 (defn- collectionize
   [x]
   (if (symbol? x)
@@ -37,7 +43,7 @@
   "Given a symbol naming an ns, or a collection of such symbols,
 returns the set of all symbols naming vars in those nses."
   [ns-sym-or-syms]
-  `'~(enumerate-namespace* (eval ns-sym-or-syms)))
+  `'~(enumerate-namespace* (eval* ns-sym-or-syms)))
 
 (defn- fn-spec-name?
   [s]
@@ -96,7 +102,7 @@ returns the set of all symbols naming vars in those nses."
   [sym-or-syms]
   (if (::no-eval (meta sym-or-syms))
     (second sym-or-syms)
-    (eval sym-or-syms)))
+    (eval* sym-or-syms)))
 
 (defmacro instrument
   "Instruments the vars named by sym-or-syms, a symbol or collection
@@ -142,7 +148,7 @@ Returns a collection of syms naming the vars instrumented."
   ([xs]
    `(instrument ~xs nil))
   ([sym-or-syms opts]
-   (let [syms (sym-or-syms->syms (form->sym-or-syms sym-or-syms))
+   (let [syms (sym-or-syms->syms (form->sym-or-syms &env sym-or-syms))
          opts-sym (gensym "opts")]
      `(let [~opts-sym ~opts]
         (reduce
@@ -165,7 +171,7 @@ Returns a collection of syms naming the vars unstrumented."
   ([]
    `(unstrument ^::no-eval '[~@(deref instrumented-vars)]))
   ([sym-or-syms]
-   (let [syms (sym-or-syms->syms (form->sym-or-syms sym-or-syms))]
+   (let [syms (sym-or-syms->syms (form->sym-or-syms &env sym-or-syms))]
      `(reduce
         (fn [ret# f#]
           (let [sym# (f#)]
