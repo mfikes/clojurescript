@@ -10388,14 +10388,14 @@ reduces them without incurring seq initialization"
 (deftype Delay [^:mutable f ^:mutable value]
   IDeref
   (-deref [_]
-    (when f
+    (when-not (nil? f)
       (set! value (f))
       (set! f nil))
     value)
 
   IPending
   (-realized? [x]
-    (not f))
+    (nil? f))
 
   IPrintWithWriter
   (-pr-writer [x writer opts]
