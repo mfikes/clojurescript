@@ -11250,18 +11250,44 @@ reduces them without incurring seq initialization"
   (assert (string? s))
   (UUID. (.toLowerCase s) nil))
 
-(defn random-uuid []
-  (letfn [(hex [] (.toString (rand-int 16) 16))]
-    (let [rhex (.toString (bit-or 0x8 (bit-and 0x3 (rand-int 16))) 16)]
-      (uuid
-        (str (hex) (hex) (hex) (hex)
-             (hex) (hex) (hex) (hex) "-"
-             (hex) (hex) (hex) (hex) "-"
-             "4"   (hex) (hex) (hex) "-"
-             rhex  (hex) (hex) (hex) "-"
-             (hex) (hex) (hex) (hex)
-             (hex) (hex) (hex) (hex)
-             (hex) (hex) (hex) (hex))))))
+(cond (and (exists? goog.global.crypto)
+           (exists? goog.global.crypto.getRandomValues))
+      (defn- random-uuid-vals []
+        (goog.global.crypto.getRandomValues (js/Uint8Array. 31)))
+      (and (exists? goog.global.msCrypto)
+           (exists? goog.global.msCrypto.getRandomValues))
+      (defn- random-uuid-vals []
+        (goog.global.msCrypto.getRandomValues (js/Uint8Array. 31)))
+      :else
+      (defn- random-uuid-vals []
+        (array (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16) (rand-int 16)
+               (rand-int 16) (rand-int 16) (rand-int 16))))
+
+(defn random-uuid
+  "Generates version 4 UUIDs using, if available, a cryptographically
+  strong pseudo random number generator, uses Math/random as a
+  fallback if the Web Crypto API or crypto module (on Node.js) are not
+  available."
+  []
+  (let [rvals (random-uuid-vals)
+        a (make-array 36)
+        rhex (-> rvals (aget 15) (js-mod 16) (bit-and 0x3) (bit-or 0x8) (.toString 16))]
+    (letfn [(ahex [a n rvn] (aset a n (-> rvals (aget rvn) (js-mod 16) (.toString 16))))]
+      (do (ahex a 0 0)     (ahex a 1 1)   (ahex a 2 2)   (ahex a 3 3)
+          (ahex a 4 4)     (ahex a 5 5)   (ahex a 6 6)   (ahex a 7 7)   (aset a 8 "-")
+          (ahex a 9 8)     (ahex a 10 9)  (ahex a 11 10) (ahex a 12 11) (aset a 13 "-")
+          (aset a 14 "4")  (ahex a 15 12) (ahex a 16 13) (ahex a 17 14) (aset a 18 "-")
+          (aset a 19 rhex) (ahex a 20 16) (ahex a 21 17) (ahex a 22 18) (aset a 23 "-")
+          (ahex a 24 19)   (ahex a 25 20) (ahex a 26 21) (ahex a 27 22)
+          (ahex a 28 23)   (ahex a 29 24) (ahex a 30 25) (ahex a 31 26)
+          (ahex a 32 27)   (ahex a 33 28) (ahex a 34 29) (ahex a 35 30)
+          (uuid (.join a ""))))))
 
 (defn uuid?
   [x] (implements? IUUID x))
