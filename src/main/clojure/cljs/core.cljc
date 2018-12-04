@@ -1468,13 +1468,6 @@
   (core/list (vec args)
     (list* 'this-as (vary-meta this assoc :tag type) body)))
 
-(core/defn- adapt-ifn-params [type [[this & args :as sig] & body]]
-  (core/let [self-sym (with-meta 'self__ {:tag type})]
-    `(~(vec (cons self-sym args))
-       (this-as ~self-sym
-         (let [~this ~self-sym]
-           ~@body)))))
-
 ;; for IFn invoke implementations, we need to drop first arg
 (core/defn- adapt-ifn-invoke-params [type [[this & args :as sig] & body]]
   `(~(vec args)
@@ -1505,11 +1498,35 @@
     (map #(adapt-ifn-invoke-params type %) meths)))
 
 (core/defn- add-ifn-methods [type type-sym [f & meths :as form]]
-  (core/let [meths    (map #(adapt-ifn-params type %) meths)
-             this-sym (with-meta 'self__ {:tag type})
-             argsym   (gensym "args")]
+  (core/let [this-sym (with-meta 'self__ {:tag type})
+             argsym   (gensym "args")
+
+             ;; we are emulating JS .call where the first argument will become this inside the fn
+             ;; but this is not actually what we want when emulating IFn since we need "this"
+             ;; so the first arg is always dropped instead and we dispatch to the actual protocol fns
+             call-fn
+             `(fn [unused#]
+                (this-as ~this-sym
+                  (case (-> (js-arguments) (alength) (dec))
+                    ~@(reduce
+                        (core/fn [form [args & body]]
+                          (core/let [arity (core/-> args (count) (core/dec))]
+                            (conj
+                              form
+                              arity
+                              (concat
+                                (core/list
+                                  (symbol (core/str ".cljs$core$IFn$_invoke$arity$" arity))
+                                  this-sym)
+                                (core/for [ar (range arity)]
+                                  `(aget (js-arguments) ~(core/inc ar)))))))
+                        []
+                        meths)
+                    (throw (js/Error. (str "Invalid arity: " (-> (js-arguments) (alength) (dec)))))
+                    )))]
+
     (concat
-      [`(set! ~(extend-prefix type-sym 'call) ~(with-meta `(fn ~@meths) (meta form)))
+      [`(set! ~(extend-prefix type-sym 'call) ~(with-meta call-fn (meta form)))
        `(set! ~(extend-prefix type-sym 'apply)
           ~(with-meta
              `(fn ~[this-sym argsym]
