@@ -281,7 +281,12 @@
       (is (re-find #"(?m)^.*var .*=.*inv_arg1.cljs.core.IFn._invoke.arity.0 \?.*$"
                    content))
       ;; CLJS-1871: A declare hinted with :arglists meta should result in static dispatch
-      (is (str/includes? content "cljs.invoke_test.declared_fn(")))))
+      (is (str/includes? content "cljs.invoke_test.declared_fn("))
+
+      ;; calls to impls of cljs.core/IFn should directly dispatch without checking the property
+      (is (not (str/includes? content "foo_1.call")))
+      (is (not (str/includes? content "foo_2.call")))
+      )))
 #_(test-vars [#'test-optimized-invoke-emit])
 
 ;; CLJS-1225

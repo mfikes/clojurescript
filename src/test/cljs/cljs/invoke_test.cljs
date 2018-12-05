@@ -34,3 +34,14 @@
 (declare ^{:arglists '([a b])} declared-fn)
 
 (declared-fn 1 2)
+
+(deftype Foo [a]
+  IFn
+  (-invoke [_] a))
+
+(def foo-1 (Foo. 1))
+
+(foo-1)
+
+(let [foo-2 (Foo. 2)]
+  (foo-2))

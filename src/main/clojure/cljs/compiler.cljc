@@ -1145,10 +1145,19 @@
                       (= (get (string/split ns-str #"\.") 0 nil) "goog"))
                     (not (contains? (::ana/namespaces @env/*compiler*) ns))))
 
-        keyword? (or (= 'cljs.core/Keyword (ana/infer-tag env f))
-                     (let [f (ana/unwrap-quote f)]
-                       (and (= (-> f :op) :const)
-                            (keyword? (-> f :form)))))
+        ifn? (let [ftag (ana/infer-tag env f)]
+               (or (= 'cljs.core/Keyword ftag)
+                   (let [f (ana/unwrap-quote f)]
+                     (and (= (-> f :op) :const)
+                          (keyword? (-> f :form))))
+                   ;; check qualified symbols if they point to something
+                   ;; that implements cljs.core/IFn. skips checking simple
+                   ;; symbols like string, any, etc.
+                   ;; qualified-symbol? is clojure 1.9 but we are targeting 1.8
+                   (and (symbol? ftag)
+                        (namespace ftag)
+                        (when-let [ps (:protocols (ana/resolve-var env ftag))]
+                          (contains? ps 'cljs.core/IFn)))))
         [f variadic-invoke]
         (if fn?
           (let [arity (count args)
@@ -1197,7 +1206,7 @@
                         (munge (name (:name info))) "$arity$" (count args))]
          (emits (first args) "." pimpl "(" (comma-sep (cons "null" (rest args))) ")"))
 
-       keyword?
+       ifn?
        (emits f ".cljs$core$IFn$_invoke$arity$" (count args) "(" (comma-sep args) ")")
 
        variadic-invoke
