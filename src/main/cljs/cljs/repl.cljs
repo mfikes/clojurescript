@@ -72,7 +72,7 @@
   [o]
   (let [base (fn [t]
                (merge {:type (cond
-                               (instance? ExceptionInfo t) 'ExceptionInfo
+                               (instance? ExceptionInfo t) `ExceptionInfo
                                (instance? js/EvalError t) 'js/EvalError
                                (instance? js/RangeError t) 'js/RangeError
                                (instance? js/ReferenceError t) 'js/ReferenceError
