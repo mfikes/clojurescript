@@ -474,7 +474,7 @@
    (err-out
      (f)
      (when-let [value (:value ret)]
-       (println value))
+       (println (string/trimr value)))
      (when-let [st (:stacktrace ret)]
        (if (and (true? (:source-map opts))
              (satisfies? IParseStacktrace repl-env))
