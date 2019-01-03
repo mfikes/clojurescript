@@ -1128,13 +1128,22 @@
                :op :js-var
                :ns current-ns})))
 
+(defn- core-async-prim-value? [x]
+  (or (symbol? x)
+      (string? x)
+      (number? x)
+      (keyword? x)
+      (true? x)
+      (false? x)
+      (char? x)))
+
 ;; core.async calls `macroexpand-1` manually with an ill-formed
-;; :locals map. Normally :locals maps symbols maps, but
-;; core.async adds entries mapping symbols to symbols. We work
-;; around that specific case here. This is called defensively
-;; every time we lookup the :locals map.
+;; :locals map. Normally :locals maps symbols to ASTs, but
+;; core.async adds entries mapping symbols to other "primitive"
+;; values. We work around those specific cases here. This is
+;; called defensively every time we lookup the :locals map.
 (defn handle-symbol-local [sym lb]
-  (if (symbol? lb)
+  (if (core-async-prim-value? lb)
     {:name sym}
     lb))
 
