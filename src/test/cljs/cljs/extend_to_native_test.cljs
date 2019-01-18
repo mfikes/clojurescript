@@ -127,3 +127,13 @@
   (is (= :p (test-seqable 1)))
   (extend-type string IReduce (-reduce [_ _] :q))
   (is (= :q (test-reduceable "a"))))
+
+(defprotocol IFoo3039
+  (delete [_]))
+
+(extend-type default 
+  IFoo3039
+  (delete [_] 17))
+
+(deftest test-cljs-3039
+  (is (= 17 (delete #js {}))))
