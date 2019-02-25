@@ -1560,8 +1560,8 @@
                               :macros-ns  (:macros-ns opts)
                               :provides   [ns-name]
                               :requires   (if (= ns-name 'cljs.core)
-                                            (set (vals deps))
-                                            (cond-> (conj (set (vals deps)) 'cljs.core)
+                                            (distinct (vals deps))
+                                            (cond-> (into ['cljs.core] (distinct (vals deps)))
                                               (get-in @env/*compiler* [:options :emit-constants])
                                               (conj ana/constants-ns-sym)))
                               :file        dest
