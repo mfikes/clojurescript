@@ -836,7 +836,7 @@ The following keyword arguments can be passed with values:
 (defn- check-enumerated-arg [arg choices]
   (if-not (choices arg)
     ;; TODO clean up choices string
-    (throw (js/Error. (str "Bad argument: " arg ". It must be one of " choices)))))
+    (throw (js/Error. (str "Bad argument: " (pr-str arg) ". It must be one of " (pr-str choices))))))
 
 (defn- level-exceeded []
   (and *print-level* (>= *current-level* *print-level*)))
