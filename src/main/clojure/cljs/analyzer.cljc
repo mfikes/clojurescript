@@ -3298,8 +3298,8 @@
 ;; (. o -p <args>)
 (defmethod build-dot-form [::expr ::property ::list]
   [[target prop args]]
-  #?(:clj  (throw (Error. (str "Cannot provide arguments " args " on property access " prop)))
-     :cljs (throw (js/Error. (str "Cannot provide arguments " args " on property access " prop)))))
+  #?(:clj  (throw (Error. (str "Cannot provide arguments " (pr-str args) " on property access " (pr-str prop))))
+     :cljs (throw (js/Error. (str "Cannot provide arguments " (pr-str args) " on property access " (pr-str prop))))))
 
 (defn- build-method-call
   "Builds the intermediate method call map used to reason about the parsed form during
