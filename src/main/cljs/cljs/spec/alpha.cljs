@@ -68,7 +68,7 @@
   [k]
   (if (ident? k)
     (c/or (reg-resolve k)
-          (throw (js/Error. (str "Unable to resolve spec: " k))))
+          (throw (js/Error. (str "Unable to resolve spec: " (pr-str k)))))
     k))
 
 (defn spec?
@@ -118,7 +118,7 @@
   [spec-or-k]
   (c/or (maybe-spec spec-or-k)
         (when (ident? spec-or-k)
-          (throw (js/Error. (str "Unable to resolve spec: " spec-or-k))))))
+          (throw (js/Error. (str "Unable to resolve spec: " (pr-str spec-or-k)))))))
 
 (defn- fn-sym [f-n]
   (when-not (str/blank? f-n)
@@ -288,7 +288,7 @@
                        (gfn))
                  (gen* spec overrides path rmap))]
       (gen/such-that #(valid? spec %) g 100)
-      (throw (js/Error. (str "Unable to construct gen at: " path " for: " (abbrev form)))))))
+      (throw (js/Error. (str "Unable to construct gen at: " (pr-str path) " for: " (pr-str (abbrev form))))))))
 
 (defn gen
   "Given a spec, returns the generator for it, or throws if none can
@@ -564,7 +564,7 @@
                          ::invalid))
        (unform* [_ x] (if-let [pred (predx x)]
                         (unform pred x)
-                        (throw (js/Error. (str "No method of: " form " for dispatch value: " (dval x))))))
+                        (throw (js/Error. (str "No method of: " (pr-str form) " for dispatch value: " (pr-str (dval x)))))))
        (explain* [_ path via in x]
          (let [dv (dval x)
                path (conj path dv)]
