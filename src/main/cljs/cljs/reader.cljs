@@ -52,14 +52,14 @@
 
 (defn ^:private check [low n high msg]
   (when-not (<= low n high)
-    (throw (js/Error. (str msg " Failed:  " low "<=" n "<=" high))))
+    (throw (js/Error. (str msg " Failed:  " (pr-str low) "<=" (pr-str n) "<=" (pr-str high)))))
   n)
 
 (defn parse-and-validate-timestamp [s]
   (let [[_ years months days hours minutes seconds fraction offset-sign offset-hours offset-minutes :as v]
         (re-matches timestamp-regex s)]
     (if-not v
-      (throw (js/Error. (str "Unrecognized date/time syntax: " s)))
+      (throw (js/Error. (str "Unrecognized date/time syntax: " (pr-str s))))
       (let [years (parse-int years)
             months (or (parse-int months) 1)
             days (or (parse-int days) 1)
@@ -87,7 +87,7 @@
     (js/Date.
       (- (.UTC js/Date years (dec months) days hours minutes seconds ms)
         (* offset 60 1000)))
-    (throw (js/Error. (str "Unrecognized date/time syntax: " ts)))))
+    (throw (js/Error. (str "Unrecognized date/time syntax: " (pr-str ts))))))
 
 (defn ^:private read-date
   [s]

@@ -1185,7 +1185,7 @@
 
 ;;;;;;;;;;;;;;;;;;; fundamentals ;;;;;;;;;;;;;;;
 
-(declare array-seq prim-seq IndexedSeq)
+(declare array-seq prim-seq IndexedSeq pr-str)
 
 (defn iterable?
   "Return true if x implements IIterable protocol."
@@ -1223,7 +1223,7 @@
       (native-satisfies? ISeqable coll)
       (-seq coll)
 
-      :else (throw (js/Error. (str coll " is not ISeqable"))))))
+      :else (throw (js/Error. (str (pr-str coll) " is not ISeqable"))))))
 
 (defn first
   "Returns the first item in the collection. Calls seq on its
@@ -1375,7 +1375,7 @@
   (-compare [this other]
     (if (instance? js/Date other)
       (garray/defaultCompare (.valueOf this) (.valueOf other))
-      (throw (js/Error. (str "Cannot compare " this " to " other))))))
+      (throw (js/Error. (str "Cannot compare " (pr-str this) " to " (pr-str other)))))))
 
 (defprotocol Inst
   (inst-ms* [inst]))
@@ -2387,7 +2387,7 @@ reduces them without incurring seq initialization"
 
    (number? x) (if (number? y)
                  (garray/defaultCompare x y)
-                 (throw (js/Error. (str "Cannot compare " x " to " y))))
+                 (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y)))))
 
    (satisfies? IComparable x)
    (-compare x y)
@@ -2396,7 +2396,7 @@ reduces them without incurring seq initialization"
    (if (and (or (string? x) (array? x) (true? x) (false? x))
             (identical? (type x) (type y)))
      (garray/defaultCompare x y)
-     (throw (js/Error. (str "Cannot compare " x " to " y))))))
+     (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y)))))))
 
 (defn ^:private compare-indexed
   "Compare indexed collection."
@@ -3355,7 +3355,7 @@ reduces them without incurring seq initialization"
   [x]
   (if (implements? INamed x)
     (-namespace x)
-    (throw (js/Error. (str "Doesn't support namespace: " x)))))
+    (throw (js/Error. (str "Doesn't support namespace: " (pr-str x))))))
 
 (defn ident?
   "Return true if x is a symbol or keyword"
@@ -4058,7 +4058,7 @@ reduces them without incurring seq initialization"
     (string? coll) (string-iter coll)
     (array? coll) (array-iter coll)
     (seqable? coll) (seq-iter coll)
-    :else (throw (js/Error. (str "Cannot create iterator from " coll)))))
+    :else (throw (js/Error. (str "Cannot create iterator from " (pr-str coll))))))
 
 (deftype Many [vals]
   Object
@@ -4246,7 +4246,7 @@ reduces them without incurring seq initialization"
   "Returns true if n is even, throws an exception if n is not an integer"
    [n] (if (integer? n)
         (zero? (bit-and n 1))
-        (throw (js/Error. (str "Argument must be an integer: " n)))))
+        (throw (js/Error. (str "Argument must be an integer: " (pr-str n))))))
 
 (defn odd?
   "Returns true if n is odd, throws an exception if n is not an integer"
@@ -5387,7 +5387,7 @@ reduces them without incurring seq initialization"
             ret))))))
 
 (defn- vector-index-out-of-bounds [i cnt]
-  (throw (js/Error. (str "No item " i " in vector of length " cnt))))
+  (throw (js/Error. (str "No item " (pr-str i) " in vector of length " (pr-str cnt)))))
 
 (defn- first-array-for-longvec [pv]
   ;; invariants: (count pv) > 32.
@@ -5616,7 +5616,7 @@ reduces them without incurring seq initialization"
            (PersistentVector. meta cnt shift root new-tail nil))
          (PersistentVector. meta cnt shift (do-assoc coll shift root n val) tail nil))
        (== n cnt) (-conj coll val)
-       :else (throw (js/Error. (str "Index " n " out of bounds  [0," cnt "]")))))
+       :else (throw (js/Error. (str "Index " (pr-str n) " out of bounds  [0," cnt "]")))))
 
   IReduce
   (-reduce [v f]
@@ -5920,7 +5920,7 @@ reduces them without incurring seq initialization"
   (-assoc-n [coll n val]
     (let [v-pos (+ start n)]
       (if (or (neg? n) (<= (inc end) v-pos))
-        (throw (js/Error. (str "Index " n " out of bounds [0," (-count coll) "]")))
+        (throw (js/Error. (str "Index " (pr-str n) " out of bounds [0," (-count coll) "]")))
         (build-subvec meta (assoc v v-pos val) start (max end (inc v-pos)) nil))))
 
   IReduce
@@ -9502,7 +9502,7 @@ reduces them without incurring seq initialization"
     (-name x)
     (if (string? x)
       x
-      (throw (js/Error. (str "Doesn't support name: " x))))))
+      (throw (js/Error. (str "Doesn't support name: " (pr-str x)))))))
 
 (defn zipmap
   "Returns a map with the keys mapped to the corresponding vals."
@@ -10440,43 +10440,43 @@ reduces them without incurring seq initialization"
   (-compare [x y]
     (if (symbol? y)
       (compare-symbols x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y)))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y))))))
 
   Keyword
   (-compare [x y]
     (if (keyword? y)
       (compare-keywords x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y)))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y))))))
 
   Subvec
   (-compare [x y]
     (if (vector? y)
       (compare-indexed x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y)))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y))))))
   
   PersistentVector
   (-compare [x y]
     (if (vector? y)
       (compare-indexed x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y)))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y))))))
 
   MapEntry
   (-compare [x y]
     (if (vector? y)
       (compare-indexed x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y)))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y))))))
 
   BlackNode
   (-compare [x y]
     (if (vector? y)
       (compare-indexed x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y)))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y))))))
 
   RedNode
   (-compare [x y]
     (if (vector? y)
       (compare-indexed x y)
-      (throw (js/Error. (str "Cannot compare " x " to " y))))))
+      (throw (js/Error. (str "Cannot compare " (pr-str x) " to " (pr-str y)))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; Reference Types ;;;;;;;;;;;;;;;;
 
@@ -11019,7 +11019,7 @@ reduces them without incurring seq initialization"
   (-dispatch-fn [mf]))
 
 (defn- throw-no-method-error [name dispatch-val]
-  (throw (js/Error. (str "No method in multimethod '" name "' for dispatch value: " dispatch-val))))
+  (throw (js/Error. (str "No method in multimethod '" (pr-str name) "' for dispatch value: " (pr-str dispatch-val)))))
 
 (deftype MultiFn [name dispatch-fn default-dispatch-val hierarchy
                   method-table prefer-table method-cache cached-hierarchy]
@@ -11185,8 +11185,8 @@ reduces them without incurring seq initialization"
 
   (-prefer-method [mf dispatch-val-x dispatch-val-y]
     (when (prefers* dispatch-val-x dispatch-val-y prefer-table)
-      (throw (js/Error. (str "Preference conflict in multimethod '" name "': " dispatch-val-y
-                   " is already preferred to " dispatch-val-x))))
+      (throw (js/Error. (str "Preference conflict in multimethod '" (pr-str name) "': " (pr-str dispatch-val-y)
+                             " is already preferred to " (pr-str dispatch-val-x)))))
     (swap! prefer-table
            (fn [old]
              (assoc old dispatch-val-x
@@ -11615,7 +11615,7 @@ reduces them without incurring seq initialization"
                     (next segs))
                   (find-ns-obj* goog/global segs))
       ("default" "webworker") (find-ns-obj* goog/global segs)
-      (throw (js/Error. (str "find-ns-obj not supported for target " *target*))))))
+      (throw (js/Error. (str "find-ns-obj not supported for target " (pr-str *target*)))))))
 
 (defn ns-interns*
   "Returns a map of the intern mappings for the namespace.
