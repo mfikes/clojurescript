@@ -8,7 +8,8 @@
 
 (ns cljs.analyzer-api-tests
   (:require [cljs.analyzer.api :as ana-api])
-  (:use clojure.test))
+  (:use clojure.test)
+  (:import clojure.lang.ExceptionInfo))
 
 (deftest cljs-warning-test
   (is (ana-api/warning-enabled? :undeclared-var)
@@ -40,3 +41,35 @@
       (ana-api/analyze test-cenv test-env warning-form nil
                        {:warning-handlers [(warning-handler counter)]}))
     (is (= 1 @counter))))
+
+(defn resolve-handler1 [warning-type env extra]
+  (println "H1" warning-type))
+
+(defn resolve-handler2 [warning-type env extra]
+  (println "H2" warning-type))
+
+(deftest with-resolve-warning-handlers-test
+  (is (= "H1 :fn-arity\nH2 :fn-arity\n"
+         (with-out-str
+           (ana-api/analyze
+            test-cenv test-env warning-form nil
+            (clojure.edn/read-string
+             "{:warning-handlers [cljs.analyzer-api-tests/resolve-handler1
+                                  cljs.analyzer-api-tests/resolve-handler2]}"))))))
+
+(deftest with-resolve-warning-handlers-misconfigure-test
+  (is (thrown-with-msg? ExceptionInfo #":warning-handlers symbol unqualified-sym is not fully qualified"
+                       (ana-api/analyze
+                        test-cenv test-env warning-form nil
+                        (clojure.edn/read-string
+                         "{:warning-handlers [unqualified-sym]}"))))
+  (is (thrown-with-msg? ExceptionInfo #"Cannot require namespace referred by :warning-handlers value wont-find-this-ns/sym"
+                        (ana-api/analyze
+                         test-cenv test-env warning-form nil
+                         (clojure.edn/read-string
+                          "{:warning-handlers [wont-find-this-ns/sym]}"))))
+  (is (thrown-with-msg? ExceptionInfo #":warning-handlers symbol cljs.analyzer-api-tests/unfound-sym not found"
+                        (ana-api/analyze
+                         test-cenv test-env warning-form nil
+                         (clojure.edn/read-string
+                          "{:warning-handlers [cljs.analyzer-api-tests/unfound-sym]}")))))
