@@ -713,9 +713,13 @@
       (when *cljs-file*
         (str " in file " *cljs-file*)))))
 
+(defn- resolve-handler [h]
+  #?(:clj (cond-> h (symbol? h) (util/sym->var-checked :warning-handlers {} load-mutex))
+     :cljs h))
+
 (defn warning [warning-type env extra]
-  (doseq [handler *cljs-warning-handlers*]
-    (handler warning-type env extra)))
+  (doseq [h *cljs-warning-handlers*]
+    ((resolve-handler h) warning-type env extra)))
 
 (defn- accumulating-warning-handler [warn-acc]
   (fn [warning-type env extra]
