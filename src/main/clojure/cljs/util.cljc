@@ -406,3 +406,35 @@
                  (or (.endsWith path ".json")
                      (.endsWith path ".js"))))
        fseq))))
+
+(defn sym->var
+  "Converts a namespaced symbol to a var, loading the requisite namespace if
+  needed. For use with a function defined under a keyword in opts. The kw and
+  ex-data arguments are used to form exceptions."
+  [sym kw ex-data load-mutex]
+  (let [ns     (namespace sym)
+        _      (when (nil? ns)
+                 (throw
+                  (ex-info (str kw " symbol " sym " is not fully qualified")
+                           (merge ex-data {kw sym
+                                           :clojure.error/phase :compilation}))))
+        var-ns (symbol ns)]
+    (when (not (find-ns var-ns))
+      (try
+        (locking load-mutex
+          (require var-ns))
+        (catch Throwable t
+          (throw (ex-info (str "Cannot require namespace referred by " kw " value " sym)
+                          (merge ex-data {kw sym
+                                          :clojure.error/phase :compilation})
+                          t)))))
+
+    (find-var sym)))
+
+(defn sym->var-checked
+  "See sym->var but throws when sym not found"
+  [sym kw ex-data load-mutex]
+  (or (sym->var sym kw ex-data load-mutex)
+      (throw (ex-info (str kw " symbol " sym " not found")
+                      (merge ex-data {kw sym
+                                      :clojure.error/phase :compilation})))))
