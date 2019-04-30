@@ -77,36 +77,14 @@
 (defn random-string [length]
   (apply str (take length (repeatedly random-char))))
 
-(defn- sym->var
-  "Converts a namespaced symbol to a var, loading the requisite namespace if
-  needed. For use with a function defined under a keyword in opts. The kw and
-  ex-data arguments are used to form exceptions."
-  [sym kw ex-data]
-  (let [ns     (namespace sym)
-        _      (when (nil? ns)
-                 (throw
-                   (ex-info (str kw " symbol " sym " is not fully qualified")
-                     (merge ex-data {kw sym
-                                     :clojure.error/phase :compilation}))))
-        var-ns (symbol ns)]
-    (when (not (find-ns var-ns))
-      (try
-        (locking ana/load-mutex
-          (require var-ns))
-        (catch Throwable t
-          (throw (ex-info (str "Cannot require namespace referred by " kw " value " sym)
-                   (merge ex-data {kw sym
-                                   :clojure.error/phase :compilation})
-                   t)))))
 
-    (find-var sym)))
 
 (defn- opts-fn
   "Extracts a function from opts, by default expecting a function value, but
   converting from a namespaced symbol if needed."
   [kw opts]
   (when-let [fn-or-sym (kw opts)]
-    (cond-> fn-or-sym (symbol? fn-or-sym) (sym->var kw {}))))
+    (cond-> fn-or-sym (symbol? fn-or-sym) (util/sym->var kw {} ana/load-mutex))))
 
 ;; Closure API
 ;; ===========
@@ -2684,7 +2662,7 @@
     (js-transforms js-module opts)
 
     (symbol? preprocess)
-    (let [preprocess-var (sym->var preprocess :preprocess {:file (:file js-module)})]
+    (let [preprocess-var (util/sym->var preprocess :preprocess {:file (:file js-module)} ana/load-mutex)]
       (try
         (preprocess-var js-module opts)
         (catch Throwable t
