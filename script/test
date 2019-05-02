@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 rm -rf builds/out-adv
 rm -rf out
@@ -9,8 +9,7 @@ rm -rf package-lock.json
 echo {} > package.json
 mkdir -p builds/out-adv
 
-possible=6
-ran=0
+COMPILE_OUTPUT=builds/out-adv/core-advanced-test.js
 
 if ! bin/cljsc src/test/cljs "{:optimizations :advanced
                                :main test-runner
@@ -35,57 +34,9 @@ if ! bin/cljsc src/test/cljs "{:optimizations :advanced
                                                :provides [\"calculator\"]}
                                               {:file \"src/test/cljs/es6_default_hello.js\"
                                                :provides [\"es6_default_hello\"]
-                                               :module-type :es6}]}" > builds/out-adv/core-advanced-test.js; then
+                                               :module-type :es6}]}" > $COMPILE_OUTPUT; then
   >&2 echo ClojureScript compilation failed
   exit 1
 fi;
 
-if [ "$V8_HOME" = "" ]; then
-  echo "V8_HOME not set, skipping V8 tests"
-else
-  echo "Testing with V8"
-  "${V8_HOME}/d8" builds/out-adv/core-advanced-test.js
-  ran=$((ran+1))
-fi
-
-if [ "$SPIDERMONKEY_HOME" = "" ]; then
-  echo "SPIDERMONKEY_HOME not set, skipping SpiderMonkey tests"
-else
-  echo "Testing with SpiderMonkey"
-  ${SPIDERMONKEY_HOME}/js -f builds/out-adv/core-advanced-test.js
-  ran=$((ran+1))
-fi
-
-if ! hash jsc 2>/dev/null; then
-  echo "jsc not on path, skipping JavaScriptCore tests"
-else
-  echo "Testing with JavaScriptCore"
-  jsc -f builds/out-adv/core-advanced-test.js
-  ran=$((ran+1))
-fi
-
-if [ "$NASHORN_HOME" = "" ]; then
-  echo "NASHORN_HOME not set, skipping Nashorn tests"
-else
-  echo "Testing with Nashorn"
-  "${NASHORN_HOME}/jjs" builds/out-adv/core-advanced-test.js
-  ran=$((ran+1))
-fi
-
-if [ "$CHAKRACORE_HOME" = "" ]; then
-  echo "CHAKRACORE_HOME not set, skipping ChakraCore tests"
-else
-  echo "Testing with ChakraCore"
-  "${CHAKRACORE_HOME}/ch" builds/out-adv/core-advanced-test.js
-  ran=$((ran+1))
-fi
-
-if [ "$GRAALVM_HOME" = "" ]; then
-  echo "GRAALVM_HOME not set, skipping GraalVM tests"
-else
-  echo "Testing with GraalVM"
-  "${GRAALVM_HOME}/js" builds/out-adv/core-advanced-test.js
-  ran=$((ran+1))
-fi
-
-echo "Tested with $ran out of $possible possible js targets"
+exec ./script/test-runner $COMPILE_OUTPUT
