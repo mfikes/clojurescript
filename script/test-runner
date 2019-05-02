@@ -1,0 +1,157 @@
+#!/usr/bin/env bash
+
+set -u
+
+if [ "$#" -ne 1 ]; then
+   echo "Usage: $0 COMPILE_OUTPUT" >&2
+   exit 1
+fi
+if ! [ -e "$1" ]; then
+   echo "COMPILE_OUTPUT not found: $1"
+   exit 1
+fi
+
+COMPILE_OUTPUT=$1
+
+# colors
+if [ ! -z "${NO_COLOR:-}" ];then
+    RED=""
+    GREEN=""
+    BLUE=""
+    PURPLE=""
+    COLOR_OFF=""
+else
+    RED='\033[0;31m'
+    GREEN='\033[0;32m'
+    BLUE='\033[0;94m'
+    PURPLE='\033[0;95m'
+    COLOR_OFF='\033[0m'
+fi
+
+# summary counts
+possible=0
+skipped=0
+fail=0
+
+# summary collector
+results_recap=""
+
+print_result() {
+    printf "$1"
+    results_recap="${results_recap}$1"
+}
+
+print_success_result() {
+    print_result "${GREEN}✔ $1${COLOR_OFF}\n"
+}
+
+print_error_result() {
+    print_result "${RED}✗ $1${COLOR_OFF}\n"
+}
+
+print_info_result() {
+    print_result "${BLUE}! $1${COLOR_OFF}\n"
+}
+
+print_heading() {
+    printf "${PURPLE}> $1${COLOR_OFF}\n"
+}
+
+print_info_note() {
+    printf "${BLUE}$1${COLOR_OFF}\n"
+}
+
+print_error_note() {
+    printf "${RED}$1${COLOR_OFF}\n"
+}
+
+print_summary_heading() {
+    local heading=$1
+    local exit_code=$2
+    local overall_status="${RED}FAILURE${COLOR_OFF}"
+    if [ $exit_code -eq 0 ]; then
+        overall_status="${GREEN}SUCCESS${COLOR_OFF}"
+    fi
+    printf "\n${PURPLE}${heading} - ${overall_status}:${COLOR_OFF}\n"
+}
+
+test() {
+    local id=$1
+    local cmd=$2
+    local args=$3
+    local outfile="$(dirname $COMPILE_OUTPUT)/test-out-${id}.log"
+
+    echo "${cmd} ${args}"
+
+    rm -rf $outfile
+    ${cmd} ${args} | tee $outfile
+    # Not all js engines return failure codes, so grep for succcess.
+    tail -1 ${outfile} | grep -q '^0 failures, 0 errors.'
+    exit_code=$?
+    if [ ${exit_code} -eq 0 ]; then
+        print_success_result "${id} passed"
+    else
+        print_error_result "${id} failed"
+        fail=$((fail+1))
+    fi
+}
+
+test_target() {
+    local id=$1
+    local home_var_name=$2
+    if [ "${OSTYPE}" == "msys" ] && [ $# -gt 3 ]; then
+        local cmd_and_args=$4
+    else
+        local cmd_and_args=$3
+    fi
+    local cmd
+    local args
+    read cmd args <<< $(echo $cmd_and_args)
+
+    possible=$((possible+1))
+    print_heading "Test ${id}"
+    if [ "${home_var_name}" = "" ]; then
+        if ! hash $cmd 2>/dev/null; then
+            print_info_result "${id} skipped - ${cmd} not found in on PATH"
+            skipped=$((skipped+1))
+        else
+            test $id ${cmd} "${args} ${COMPILE_OUTPUT}"
+        fi
+    else
+        local home=${!home_var_name}
+        if [ "${home}" = "" ]; then
+            print_info_result "${id} skipped - ${home_var_name} not set"
+            skipped=$((skipped+1))
+        else
+            test $id ${home}/${cmd} "${args} ${COMPILE_OUTPUT}"
+        fi
+    fi
+}
+
+#           test id          home var             linux/mac  windows override
+#           -------          --------             ---------  ----------------
+test_target "V8"             'V8_HOME'            "d8"
+test_target "SpiderMonkey"   'SPIDERMONKEY_HOME'  "js -f"
+test_target "JavaScriptCore" ''                   "jsc -f"
+test_target "Nashorn"        'NASHORN_HOME'       "jjs"
+test_target "ChakraCore"     'CHAKRACORE_HOME'    "ch"
+test_target "GraalVM"        'GRAALVM_HOME'       "js"       "js.cmd"
+
+if [ ${fail} -gt 0 -o ${skipped} -eq ${possible} ]; then
+    exit_code=1
+else
+    exit_code=0
+fi
+
+print_summary_heading "Test target summary" $exit_code
+printf "${results_recap}"
+
+if [ ${skipped} -gt 0 ]; then
+    if [ $skipped -eq $possible ]; then
+        print_error_note "We assume skipping targets is intentional - unless all targets are skipped."
+    else
+        print_info_note "We assume skipping targets is intentional."
+    fi
+fi
+
+exit ${exit_code}
