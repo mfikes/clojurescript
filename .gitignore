@@ -1,5 +1,6 @@
 *~
 .idea
+/.cpcache
 /.DS_Store
 .DS_Store
 /classes
@@ -10,9 +11,12 @@ closure
 /coreadvanced.js
 /coresimple.js
 /out
+/package.json
+/package-lock.json
 *out
 .lein*
 /pom.xml
+/resources/brepl_client.js
 *.iml
 .repl*
 *.swp
