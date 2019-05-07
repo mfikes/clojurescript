@@ -3350,12 +3350,15 @@ reduces them without incurring seq initialization"
       (identical? (.-str x) (.-str y))
       false)))
 
+(declare ident?)
+
 (defn namespace
   "Returns the namespace String of a symbol or keyword, or nil if not present."
   [x]
-  (if (implements? INamed x)
-    (-namespace x)
-    (throw (js/Error. (str "Doesn't support namespace: " x)))))
+  (cond
+    (ident? x) ^{:tag #{string clj-nil}} (.-ns x)
+    (implements? INamed x) (-namespace x)
+    :else (throw (js/Error. (str "Doesn't support namespace: " x)))))
 
 (defn ident?
   "Return true if x is a symbol or keyword"
@@ -9499,11 +9502,11 @@ reduces them without incurring seq initialization"
 (defn name
   "Returns the name String of a string, symbol or keyword."
   [x]
-  (if (implements? INamed x)
-    (-name x)
-    (if (string? x)
-      x
-      (throw (js/Error. (str "Doesn't support name: " x))))))
+  (cond
+    (ident? x) ^string (.-name x)
+    (string? x) x
+    (implements? INamed x) (-name x)
+    :else (throw (js/Error. (str "Doesn't support name: " x)))))
 
 (defn zipmap
   "Returns a map with the keys mapped to the corresponding vals."
