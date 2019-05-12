@@ -149,6 +149,7 @@
    :invoke-ctor true
    :invalid-arithmetic true
    :invalid-array-access true
+   :redundant-nil-check true
    :protocol-invalid-method true
    :protocol-duped-method true
    :protocol-multiple-impls true
@@ -451,6 +452,10 @@
       (when (or (= 'object (first types))
                 (every? #{'string} (butlast (rest types))))
         " (consider goog.object/set for object access)"))))
+
+(defmethod error-message :redundant-nil-check
+  [warning-type info]
+  (str "Redudant nil check: " info))
 
 (defmethod error-message :invoke-ctor
   [warning-type info]

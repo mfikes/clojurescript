@@ -55,7 +55,8 @@
             [cljs.env :as env]
             #?(:clj [cljs.support :refer [assert-args]])
             #?(:cljs [cljs.core :as core])
-            #?(:cljs [cljs.analyzer :as ana])))
+            #?(:cljs [cljs.analyzer :as ana])
+            [cljs.util :as util]))
 
 #?(:clj (alias 'core 'clojure.core))
 #?(:clj (alias 'ana 'cljs.analyzer))
@@ -904,6 +905,26 @@
           (if or# or# (or ~@next)))))))
 
 (core/defmacro nil? [x]
+  (let [arg-type (cljs.analyzer/infer-tag &env
+                   (cljs.analyzer/no-warn (cljs.analyzer/analyze &env x)))]
+    (when (= 'clj-nil arg-type)
+      (cljs.analyzer/warning :redundant-nil-check &env {:type :known-nil}))
+    (when (if (set? arg-type)
+            (core/and
+              (core/not (contains? arg-type 'any))
+              (core/not (contains? arg-type 'js))
+              (core/not (contains? arg-type 'not-native))
+              (core/not (contains? arg-type 'clj-or-nil))
+              (core/not (contains? arg-type 'clj-nil))
+              (core/not (contains? arg-type 'seq)))
+            (core/and (core/some? arg-type)
+              (not= 'any arg-type)
+              (not= 'js arg-type)
+              (not= 'not-native arg-type)
+              (not= 'clj-or-nil arg-type)
+              (not= 'clj-nil arg-type)
+              (not= 'seq arg-type)))
+      (cljs.analyzer/warning :redundant-nil-check &env {:type :known-non-nil})))
   `(coercive-= ~x nil))
 
 (core/defmacro some? [x]
