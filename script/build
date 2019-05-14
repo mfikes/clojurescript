@@ -3,19 +3,25 @@
 # This script must be run within the ClojureScript top-level project
 # directory.
 
-set -e
+set -euo pipefail
 
-if [[ -z "$CLJS_SCRIPT_QUIET" ]]; then
+if [ $# -ge 1 ] && [ "$1" == "uberjar" ]; then
+    BUILD=UBERJAR
+else
+    BUILD=CLJS
+fi
+
+log() {
+    echo -e "\n[INFO] $(date +"%Y-%m-%d %H:%M:%S") $(basename $0) - $@"
+}
+
+{ log "building $BUILD"; } 2> /dev/null
+
+if [[ -z "${CLJS_SCRIPT_QUIET-}" ]]; then
   set -x
 fi
 
-cd `dirname $0`/..
-rm -rf target
-rm -f resources/brepl_client.js
-
-POM_TEMPLATE="pom.template.xml"
-POM_FILE="pom.xml"
-CLJS_SCRIPT_MVN_OPTS=${CLJS_SCRIPT_MVN_OPTS:-""}
+PROJECT_ROOT_DIR=$(cd $(dirname $0)/.. && pwd)
 
 # The command `git describe --match v0.0` will return a string like
 #
@@ -35,47 +41,75 @@ then
   REVISION="${BASH_REMATCH[1]}"
 fi
 
-TAG=r$MAJOR.$MINOR.$REVISION
-
-sed -e s/CLOJURESCRIPT_VERSION/$MAJOR.$MINOR.$REVISION/ < "$POM_TEMPLATE" > "$POM_FILE"
-
-COMP_FILE=`mktemp /tmp/compiler.clj.XXXXXXXXXXX`
-sed -e 's/^.def ^:dynamic \*clojurescript-version\*.*$/(def ^:dynamic *clojurescript-version* {:major '"$MAJOR"', :minor '"$MINOR"', :qualifier '"$REVISION"'})/' src/main/clojure/cljs/util.cljc > $COMP_FILE
-mv $COMP_FILE src/main/clojure/cljs/util.cljc
-
-CLJS_FILE=`mktemp /tmp/core.cljs.XXXXXXXXXXX`
-sed -e 's/^.def \*clojurescript-version\*.*$/(def *clojurescript-version* '\""$MAJOR.$MINOR.$REVISION"\"')/' src/main/cljs/cljs/core.cljs > $CLJS_FILE
-mv $CLJS_FILE src/main/cljs/cljs/core.cljs
-
-rm -f src/main/cljs/cljs/core.aot.js
-rm -f src/main/cljs/cljs/core.aot.js.map
-rm -f src/main/cljs/cljs/core.cljs.cache.aot.edn
-rm -f src/main/cljs/cljs/core.cljs.cache.aot.json
-
-./script/aot_core
-
-AOT_FILE=`mktemp /tmp/core.aot.js.XXXXXXXXXXX`
-sed -e 's/0.0.0000/$MAJOR.$MINOR.$REVISION/' src/main/cljs/cljs/core.aot.js > $AOT_FILE
-mv $AOT_FILE src/main/cljs/cljs/core.aot.js
-
-AOT_CACHE_FILE=`mktemp /tmp/core.cljs.cache.aot.edn.XXXXXXXXXXX`
-sed -e 's/0.0.0000/$MAJOR.$MINOR.$REVISION/' src/main/cljs/cljs/core.cljs.cache.aot.edn > $AOT_CACHE_FILE
-mv $AOT_CACHE_FILE src/main/cljs/cljs/core.cljs.cache.aot.edn
-
-# For Hudson server
-if [ "$HUDSON" = "true" ]; then
-    mvn --fail-at-end -Psonatype-oss-release $CLJS_SCRIPT_MVN_OPTS \
-        clean deploy nexus-staging:release
-
-    echo "Creating tag $TAG"
-    git tag -f "$TAG"
-    git push origin "$TAG"
-else
-    echo "Skipping remote deployment and Git tag because we are not on Hudson."
-    mvn $CLJS_SCRIPT_MVN_OPTS clean install
+if [ $BUILD == CLJS ]; then
+    rm -rf target
+    CLJS_SCRIPT_MVN_OPTS=${CLJS_SCRIPT_MVN_OPTS:-""}
+    sed -e s/CLOJURESCRIPT_VERSION/$MAJOR.$MINOR.$REVISION/ < pom.template.xml > pom.xml
 fi
 
-rm -f src/main/cljs/cljs/core.aot.js
-rm -f src/main/cljs/cljs/core.aot.js.map
-rm -f src/main/cljs/cljs/core.cljs.cache.aot.edn
-rm -f src/main/cljs/cljs/core.cljs.cache.aot.json
+from_clean_build_work_dir() {
+    # We embed cljs version in specific sources. To avoid polluting version
+    # control with these changes, we build src from a clean build directory.
+    local build_work_dir=$PROJECT_ROOT_DIR/builds/work-dir
+    rm -rf $build_work_dir
+    mkdir -p $build_work_dir
+    # copy over everything necessary to build
+    cp -a pom*.xml project.clj src resources $build_work_dir
+    # lein uberjar expects .git to sit alongside project.clj for:
+    # - population of pom.xml scm
+    # - updating of revision in pom.properties
+    cp -a $PROJECT_ROOT_DIR/.git $build_work_dir
+    # lein uberjar will include readmes and licenses that sit alongside project.clj
+    find $PROJECT_ROOT_DIR -type f -maxdepth 1 \
+         \( -iname "readme*" -o -iname "license*" \) \
+         -exec cp -p {} $build_work_dir \;
+    cd $build_work_dir
+}
+
+sed_file() {
+    # in place sed that works for both macOS and linux
+    local search=$1
+    local replace=$2
+    local file=$3
+    local tmp=`mktemp /tmp/$(basename $file).XXXXXXXXXXX`
+    sed -e "s/$search/$replace/" $file > $tmp
+    mv $tmp $file
+}
+
+{ log "setting up clean build dir"; } 2> /dev/null
+from_clean_build_work_dir
+
+{ log "adjusting versions"; } 2> /dev/null
+sed_file '^.def ^:dynamic \*clojurescript-version\*.*$' \
+         '(def ^:dynamic *clojurescript-version* {:major '"$MAJOR"', :minor '"$MINOR"', :qualifier '"$REVISION"'})' \
+         src/main/clojure/cljs/util.cljc
+
+sed_file '^.def \*clojurescript-version\*.*$' \
+         '(def *clojurescript-version* '\""$MAJOR.$MINOR.$REVISION"\"')' \
+         src/main/cljs/cljs/core.cljs
+
+{ log "building aot_core"; } 2> /dev/null
+$PROJECT_ROOT_DIR/script/aot_core
+
+if [ $BUILD == CLJS ]; then
+    # For Hudson server
+    if [ "${HUDSON-}" = "true" ]; then
+        TAG=r$MAJOR.$MINOR.$REVISION
+        { log "on hudson - building cljs staging release"; } 2> /dev/null
+        mvn --fail-at-end -Psonatype-oss-release ${CLJS_SCRIPT_MVN_OPTS-} \
+            clean deploy nexus-staging:release
+
+        { log "Creating tag $TAG"; } 2> /dev/null
+        git tag -f "$TAG"
+        git push origin "$TAG"
+    else
+        { log "not on hudson - building cljs locally"; } 2> /dev/null
+        mvn ${CLJS_SCRIPT_MVN_OPTS-} clean install
+    fi
+else
+    { log "building cljs.jar uberjar"; } 2> /dev/null
+    lein uberjar
+    mkdir -p $PROJECT_ROOT_DIR/target
+    mv target/clojurescript-0.0-SNAPSHOT-standalone.jar $PROJECT_ROOT_DIR/target/cljs.jar
+fi
+{ log "done"; } 2> /dev/null
