@@ -6,6 +6,8 @@ if [[ -z "$CLJS_SCRIPT_QUIET" ]]; then
   set -x
 fi
 
+CLOJURESCRIPT_HOME=$(cd $(dirname $0)/.. && pwd)
+
 FILE_SEP='/'
 PATH_SEP=':'
 OS_ID=`uname | tr [:upper:] [:lower:]`
@@ -27,7 +29,8 @@ CLJS_CP=`cat $CP_FILE`
 
 # For Hudson server
 if [ "$HUDSON" = "true" ]; then
-    $JAVA_HOME/bin/java -server -cp "$CLJS_CP""$PATH_SEP""src/main/clojure""$PATH_SEP""src/main/cljs" clojure.main script/aot.clj
+    JAVA_CMD=$JAVA_HOME/bin/java
 else
-    java -server -cp "$CLJS_CP""$PATH_SEP""src/main/clojure""$PATH_SEP""src/main/cljs" clojure.main script/aot.clj
+    JAVA_CMD="java"
 fi
+$JAVA_CMD -server -cp "$CLJS_CP""$PATH_SEP""src/main/clojure""$PATH_SEP""src/main/cljs" clojure.main ${CLOJURESCRIPT_HOME}/script/aot.clj
