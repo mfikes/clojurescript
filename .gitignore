@@ -10,6 +10,8 @@ closure
 /coreadvanced.js
 /coresimple.js
 /out
+/package.json
+/package-lock.json
 *out
 .lein*
 /pom.xml
