@@ -175,7 +175,8 @@
         (string/join "\n" (drop 1 (string/split st #"\n")))))))
 
 (def ^:private default-js-opts
-  {"js.timer-resolution" "1"})
+  {"js.timer-resolution" "1"
+   "js.java-package-globals" "false"})
 
 (defn repl-env* [{:keys [debug] :as opts}]
   (let [opts (merge default-js-opts opts)
