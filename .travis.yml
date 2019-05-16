@@ -51,8 +51,6 @@ script:
   - grep '0 failures, 0 errors.' test-out.txt
   - ./spidermoney/js -f builds/out-adv/core-advanced-test.js | tee test-out.txt
   - grep '0 failures, 0 errors.' test-out.txt
-  - jjs builds/out-adv/core-advanced-test.js | tee test-out.txt
-  - grep '0 failures, 0 errors.' test-out.txt
   - ./ChakraCoreFiles/bin/ch builds/out-adv/core-advanced-test.js | tee test-out.txt
   - grep '0 failures, 0 errors.' test-out.txt
   - ./graalvm-ce-1.0.0-rc12/bin/js builds/out-adv/core-advanced-test.js | tee test-out.txt
@@ -62,8 +60,6 @@ script:
   - script/test-self-parity | tee test-out.txt
   - grep '0 failures, 0 errors.' test-out.txt
   - script/test-cli node | tee test-out.txt
-  - grep '0 failures, 0 errors.' test-out.txt
-  - script/test-cli nashorn | tee test-out.txt
   - grep '0 failures, 0 errors.' test-out.txt
   - script/test-cli rhino | tee test-out.txt
   - grep '0 failures, 0 errors.' test-out.txt
