@@ -10035,7 +10035,7 @@ reduces them without incurring seq initialization"
             (when (seq coll)
               (print-one (first coll) writer opts))
             (loop [coll (next coll) n (dec (:print-length opts))]
-              (if (and coll (or (nil? n) (not (zero? n))))
+              (if (and coll (not (zero? n)))
                 (do
                   (-write writer sep)
                   (print-one (first coll) writer opts)
