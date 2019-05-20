@@ -1648,10 +1648,10 @@
         (add-header opts
           (str (when (or (not module) (= :cljs-base (:module-name opts)))
                  (str "var CLJS_OUTPUT_DIR = \"" asset-path "\";\n"
-                      "load((new java.io.File(new java.io.File(\"" asset-path "\",\"goog\"), \"base.js\")).getPath());\n"
-                      "load((new java.io.File(new java.io.File(\"" asset-path "\",\"goog\"), \"deps.js\")).getPath());\n"
-                      "load((new java.io.File(new java.io.File(new java.io.File(\"" asset-path "\",\"goog\"),\"bootstrap\"),\"" (name (:target opts)) ".js\")).getPath());\n"
-                      "load((new java.io.File(\"" asset-path "\",\"cljs_deps.js\")).getPath());\n"
+                      "load(\""asset-path "/goog/base.js\");\n"
+                      "load(\""asset-path "/goog/deps.js\");\n"
+                      "load(\""asset-path "/goog/bootstrap/" (name (:target opts)) ".js\");\n"
+                      "load(\""asset-path  "/cljs_deps.js\");\n"
                       "goog.global.CLOSURE_UNCOMPILED_DEFINES = " closure-defines ";\n"
                    (apply str (preloads (:preloads opts)))))
             (apply str
