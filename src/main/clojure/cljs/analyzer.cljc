@@ -1091,7 +1091,8 @@
 
 (defmethod resolve* :default
   [env sym full-ns current-ns]
-  (let [sym-ast (gets @env/*compiler* ::namespaces full-ns :defs (symbol (name sym)))
+  (let [full-ns (symbol full-ns)
+        sym-ast (gets @env/*compiler* ::namespaces full-ns :defs (symbol (name sym)))
         sym-name (symbol (str full-ns) (str (name sym)))]
     (when (and (not= current-ns full-ns)
                (:private sym-ast)
