@@ -1552,9 +1552,9 @@ str-or-pattern."
   "Resolves a namespace symbol to a namespace by first checking to see if it
   is a namespace alias."
   [ns-sym]
-  (or (get-in @env/*compiler* [::ana/namespaces ana/*cljs-ns* :requires ns-sym])
-      (get-in @env/*compiler* [::ana/namespaces ana/*cljs-ns* :require-macros ns-sym])
-      ns-sym))
+  (symbol (or (get-in @env/*compiler* [::ana/namespaces ana/*cljs-ns* :requires ns-sym])
+              (get-in @env/*compiler* [::ana/namespaces ana/*cljs-ns* :require-macros ns-sym])
+              ns-sym)))
 
 (defmacro dir
   "Prints a sorted directory of public vars in a namespace"
