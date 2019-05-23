@@ -1774,3 +1774,7 @@
     (is (= '(3 2 1) (into nil [1 2 3]))))
   (testing "calling `set/union` with nilable sets returns a nilable set"
     (is (nil? (set/union #{} nil nil)))))
+
+(deftest peek-empty-subvec
+  (is (nil? (peek (subvec [] 0 0))))
+  (is (nil? (peek (subvec [1 2 3] 1 1)))))
