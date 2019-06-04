@@ -538,6 +538,16 @@
          'number))
   )
 
+(deftest test-cljs-3086
+  (let [ws (atom [])]
+    (try
+      (a/with-warning-handlers [(collecting-warning-handler ws)]
+                               (e/with-compiler-env test-cenv
+                                                    (analyze (a/empty-env)
+                                                             '(+ nil 1))))
+      (catch Exception _))
+    (is (= ["cljs.core/+, all arguments must be numbers, got [clj-nil number] instead"] @ws))))
+
 ;; =============================================================================
 ;; Catching errors during macroexpansion
 
