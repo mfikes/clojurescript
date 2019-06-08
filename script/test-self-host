@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # stop blowing compiled stuff
 rm -rf builds/out-self

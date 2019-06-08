@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+# when running under windows (ex. Git Bash) convert unix format java classpath to windows format
+if [[ "$OSTYPE" == "msys" ]]; then
+  cygpath -pw $1
+else
+  echo $1
+fi

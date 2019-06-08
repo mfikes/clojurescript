@@ -8,7 +8,7 @@
    [clojure.string :as string]))
 
 (deftest eval-test
-  (-> (cljs-main "-e" 3 "-e" nil "-e" 4)
+  (-> (cljs-main "-e" 3 "-e" "nil" "-e" 4)
     (output-is 3 4)))
 
 (deftest init-test

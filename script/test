@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 rm -rf builds/out-adv
 rm -rf out
@@ -84,7 +84,12 @@ if [ "$GRAALVM_HOME" = "" ]; then
   echo "GRAALVM_HOME not set, skipping GraalVM tests"
 else
   echo "Testing with GraalVM"
-  "${GRAALVM_HOME}/js" builds/out-adv/core-advanced-test.js
+  if [[ "$OSTYPE" == "msys" ]]; then
+      GRAAL_JS=js.cmd
+  else
+      GRAAL_JS=js
+  fi
+  "${GRAALVM_HOME}/${GRAAL_JS}" builds/out-adv/core-advanced-test.js
   ran=$((ran+1))
 fi
 
