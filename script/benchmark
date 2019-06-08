@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 rm -rf builds/out-adv-bench
 mkdir -p builds/out-adv-bench
@@ -44,5 +44,10 @@ if [ "$GRAALVM_HOME" = "" ]; then
   echo "GRAALVM_HOME not set, skipping GraalVM benchmarks"
 else
   echo "Benchmarking with GraalVM"
-  "${GRAALVM_HOME}/js" builds/out-adv-bench/core-advanced-benchmark.js
+  if [[ "$OSTYPE" == "msys" ]]; then
+      GRAAL_JS=js.cmd
+  else
+      GRAAL_JS=js
+  fi
+  "${GRAALVM_HOME}/${GRAAL_JS}" builds/out-adv-bench/core-advanced-benchmark.js
 fi

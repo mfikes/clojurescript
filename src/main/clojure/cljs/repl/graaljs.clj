@@ -56,9 +56,15 @@
     (eval-str engine (slurp r))
     (when debug (println "loaded: " path))))
 
+(defn- escape-path[path]
+  (when path
+    (if (string/starts-with? (System/getProperty "os.name") "Windows")
+      (.replace path "\\" "\\\\")
+      path)))
+
 (defn init-engine [engine {:keys [output-dir] :as opts} debug]
   (eval-str engine (format "var CLJS_DEBUG = %s;" (boolean debug)))
-  (eval-str engine (format "var CLJS_OUTPUT_DIR = \"%s\";" output-dir))
+  (eval-str engine (format "var CLJS_OUTPUT_DIR = \"%s\";" (escape-path output-dir)))
   (eval-resource engine "goog/base.js" debug)
   (eval-resource engine "goog/deps.js" debug)
   (eval-resource engine "cljs/bootstrap_graaljs.js" debug)
