@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # Compile a single cljs file or a directory of cljs files into a
 # single JavaScript file.
@@ -17,10 +17,12 @@ for next in lib/*: src/main/clojure: src/main/cljs: src/test/cljs; do
   CLJSC_CP="${CLJSC_CP}${CLOJURESCRIPT_HOME}/${next}"
 done
 
+CLJSC_CP=$(${CLOJURESCRIPT_HOME}/bin/classpath_conv ${CLJSC_CP})
+
 if test "$#" -eq 0
 then
   echo 'Usage: cljsc <file-or-dir>'
   echo '       cljsc <file-or-dir> "{:optimizations :advanced}"'
 else
-  java -server -Xms2g -Xmx4g -cp "$CLJSC_CP" clojure.main "$CLOJURESCRIPT_HOME/bin/cljsc.clj" "$@"
+  java -server -Xms2g -Xmx4g -Dfile.encoding=UTF-8 -cp "$CLJSC_CP" clojure.main "$CLOJURESCRIPT_HOME/bin/cljsc.clj" "$@"
 fi

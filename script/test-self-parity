@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/usr/bin/env bash
 
 # stop blowing compiled stuff
 rm -rf builds/out-self-parity
@@ -10,7 +10,7 @@ if [ ! -f lib/clojure.jar ]; then
   exit 1
 fi
 jar xvf lib/clojure.jar clojure/template.clj > /dev/null
-unzip lib/test.check.jar 'clojure/*' > /dev/null
+unzip lib/test.check.jar 'clojure/**' > /dev/null
 mkdir -p builds/out-self-parity/clojure/test
 mv clojure/template.clj builds/out-self-parity/clojure
 mv clojure/test builds/out-self-parity/clojure
