@@ -1,0 +1,164 @@
+#!/usr/bin/env bash
+
+# run scripts for a cljs env and save their output for verification
+
+set -euo pipefail
+
+# defaults for cmd line args
+ARG_CLJS_DEV_HOME_DIR="."
+ARG_SCRIPT_LOG_DIR="./script-logs"
+ARG_SKIP_SCRIPTS=()
+
+usage() {
+    echo "Usage: $(basename $0) -d <cljs dev home dir> -l <script log dir> -s <skip script 1> -s <skip script 2...>"
+}
+
+while getopts "hd:l:s:" opt; do
+    case $opt in
+        s ) ARG_SKIP_SCRIPTS+=($OPTARG);;
+        d ) ARG_CLJS_DEV_HOME_DIR=$OPTARG;;
+        l ) ARG_SCRIPT_LOG_DIR=$OPTARG;;
+        h ) usage
+            exit 0 ;;
+        * ) usage
+            exit 1
+    esac
+done
+
+elem_in_array?() {
+    if [ $# -eq 0 ]; then
+        echo "error: function usage: ${FUNCNAME} elem array"
+        echo " example: ${FUNCNAME} \"text-to-find\" \$\"{array_variable[@]}\""
+        exit 2
+    fi
+    local elem search_elem=$1
+    shift
+    for elem; do [[ "$elem" == "$search_elem" ]] && return 0; done
+    return 1
+}
+
+format_seconds() {
+    local secs=$1
+    printf '%02dh:%02dm:%02ds\n' $(($secs/3600)) $(($secs%3600/60)) $(($secs%60))
+}
+
+timestamp() {
+    date +"%Y-%m-%d %H:%M:%S"
+}
+
+show_args() {
+    echo "Running with options:"
+    echo "- cljs dev home dir: $ARG_CLJS_DEV_HOME_DIR"
+    echo "- script log dir:    $ARG_SCRIPT_LOG_DIR"
+    echo "- skip scripts:      ${ARG_SKIP_SCRIPTS[*]}"
+}
+
+on_exit() {
+    {
+      local exit_code=$?
+      set +x
+    } 2> /dev/null
+    if [ $exit_code == 0 ]; then
+        echo "Success"
+    else
+        echo "* FAILURE, check logs"
+        exit $exit_code
+    fi
+}
+
+trap on_exit EXIT
+
+with_log() {
+    # save all output for script to its own log file
+    if [ $# -lt 1 ]; then
+        echo "error: function usage: ${FUNCNAME} <cmd> [args]"
+        exit 2
+    fi
+
+    local cmd=$1
+    echo "cmd: $@"
+    if elem_in_array? "${cmd}" "${ARG_SKIP_SCRIPTS[@]}"; then
+        echo " * as requested, skipping"
+    else
+        local start_time=$SECONDS
+        if [ $# -gt 1 ]; then
+            local first_arg=$2
+        else
+            local first_arg=""
+        fi
+
+        local log_file=${LOG_DIR}/$(echo $(basename ${cmd}) ${first_arg} | tr ' ' '-').log
+        echo " log: ${log_file}"
+        echo " start: $(timestamp)"
+        {
+            set -x # enable echo of commands
+            set +u # allow undefined variables (it's a good idea but not all scripts obey)
+            export SHELLOPTS # inherit options down to called scripts
+            $@ &> ${log_file}
+            set +x # stop echoing commands
+            set -u # don't allow undefined variables
+        } 2> /dev/null
+        local elapsed_seconds=$(($SECONDS - ${start_time}))
+        echo " done:  $(timestamp)"
+        echo " elapsed: $(format_seconds ${elapsed_seconds})"
+    fi
+}
+
+setup_log_dir() {
+    LOG_DIR=${ARG_SCRIPT_LOG_DIR}
+    mkdir -p ${LOG_DIR}
+    LOG_DIR=$(cd ${LOG_DIR};pwd)
+    echo "cleaning log dir: ${LOG_DIR}"
+    rm -rf ${LOG_DIR}
+    mkdir -p ${LOG_DIR}
+}
+
+gui_available?() {
+    [ ! -z ${DISPLAY+x} ]
+}
+
+run_scripts() {
+   local start_time=$SECONDS
+   cd ${ARG_CLJS_DEV_HOME_DIR}
+
+   with_log ./script/build
+   with_log ./script/bootstrap
+   with_log ./script/compile
+   with_log ./script/self-compile
+   with_log ./script/test
+   with_log ./script/test-simple
+   with_log ./script/benchmark
+   with_log ./script/uberjar
+   with_log ./script/aot_core
+   cd script/closure-library-release
+   with_log ./closure-library-release.sh
+   cd ../..
+   with_log ./script/revision
+   with_log ./script/test-compile
+   with_log ./script/test-self-host
+   with_log ./script/test-self-parity
+   with_log ./script/test-cli node
+   with_log ./script/test-cli nashorn
+   with_log ./script/test-cli rhino
+   (export PATH="$GRAALVM_HOME:$PATH";with_log ./script/test-cli graaljs)
+   if gui_available?; then
+       with_log ./script/test-cli browser
+   fi
+
+   if gui_available?; then
+       echo :cljs/quit | with_log ./script/browser-repl
+   fi
+   echo :cljs/quit | with_log ./script/nashornrepljs
+   echo :cljs/quit | with_log ./script/noderepljs
+   echo '(System/exit 0)' | with_log ./script/repl
+   echo :cljs/quit | with_log ./script/repljs
+
+   with_log ./script/clean
+
+   local elapsed_seconds=$(($SECONDS - ${start_time}))
+   echo -e "\nTotal elapsed: $(format_seconds ${elapsed_seconds})"
+}
+
+show_args
+setup_log_dir
+run_scripts

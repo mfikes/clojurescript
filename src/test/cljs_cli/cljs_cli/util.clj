@@ -73,9 +73,14 @@
 (defn form-cp []
   (string/join File/pathSeparator ["cljs.jar" "src"]))
 
+(defn- escape-arg [arg]
+  (if (string/starts-with? (System/getProperty "os.name") "Windows")
+    (string/replace arg #"\"" "\"\"")
+    arg))
+
 (defn cljs-main [& args]
   (if (*repl-env-filter* *repl-env*)
-    (let [command-line-args (map str args)]
+    (let [command-line-args (map (comp escape-arg str) args)]
       (run-in-temp-dir
         (keep (fn [arg]
                 (when arg
@@ -99,7 +104,7 @@
   (is (zero? (:exit result)))
   (maybe-print-result-err result)
   (when-not (:repl-env-filtered result)
-    (is (= (string/trim (apply str (map print-str (interleave expected-lines (repeat "\n")))))
+    (is (= (string/trim (apply str (map print-str (interleave expected-lines (repeat (System/lineSeparator))))))
           (string/trim (:out result))))))
 
 (defn check-result [result pred]
