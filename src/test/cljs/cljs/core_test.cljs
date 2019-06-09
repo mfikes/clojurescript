@@ -1803,3 +1803,7 @@
         v (apply vector a)]
     (aset a 0 :modified)
     (is (= :original (v 0)))))
+
+(deftest test-cljs-3100
+  (let [x (reduced 1)]
+    (is (= "#object[cljs.core.Reduced {:status :ready, :val 1}]" (pr-str x)))))
