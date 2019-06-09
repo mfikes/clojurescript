@@ -10429,6 +10429,12 @@ reduces them without incurring seq initialization"
     (pr-writer {:val (.-state a)} writer opts)
     (-write writer "]"))
 
+  Reduced
+  (-pr-writer [r writer opts]
+    (-write writer "#object[cljs.core.Reduced ")
+    (pr-writer {:status :ready, :val (.-val r)} writer opts)
+    (-write writer "]"))
+
   Var
   (-pr-writer [a writer opts]
     (-write writer "#'")

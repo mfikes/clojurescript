@@ -1789,3 +1789,7 @@
   (is (= [] (subvec [1 2 3 4] 1.7 1.3)))
   (is (thrown-with-msg? js/Error #"Index out of bounds" (subvec [1 2 3 4] 0 5)))
   (is (= [1 2 3 4] (subvec [1 2 3 4] 0 4.9))))
+
+(deftest test-cljs-3100
+  (let [x (reduced 1)]
+    (is (= "#object[cljs.core.Reduced {:status :ready, :val 1}]" (pr-str x)))))
