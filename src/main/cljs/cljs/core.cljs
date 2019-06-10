@@ -6862,7 +6862,7 @@ reduces them without incurring seq initialization"
     (if (and (map? other) (not (record? other)))
       (let [alen (alength arr)
             ^not-native other other]
-        (if (== cnt (-count other))
+        (if (== cnt (count other))
           (loop [i 0]
             (if (< i alen)
               (let [v (-lookup other (aget arr i) lookup-sentinel)]

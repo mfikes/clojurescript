@@ -1789,3 +1789,12 @@
   (is (= [] (subvec [1 2 3 4] 1.7 1.3)))
   (is (thrown-with-msg? js/Error #"Index out of bounds" (subvec [1 2 3 4] 0 5)))
   (is (= [1 2 3 4] (subvec [1 2 3 4] 0 4.9))))
+
+(deftest test-cljs-3099
+  ;; Define an uncounted empty map instance, with
+  ;; just enough implementation for an -equiv test
+  (let [m (reify
+            IMap (-dissoc [m _] m)
+            ISeqable (-seq [_] nil))]
+    (is (map? m))
+    (is (-equiv (.-EMPTY PersistentArrayMap) m))))
