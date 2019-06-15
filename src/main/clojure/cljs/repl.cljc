@@ -798,7 +798,7 @@
     (if-let [src-dir (and (not (empty? src-dir))
                        (File. src-dir))]
       (doseq [file (comp/cljs-files-in src-dir)]
-        (ana/analyze-file (str "file://" (.getAbsolutePath file)) opts)))))
+        (ana/analyze-file file opts)))))
 
 (defn repl-title []
   (when-not (util/synthetic-version?)
