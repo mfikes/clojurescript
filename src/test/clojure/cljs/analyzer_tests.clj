@@ -2022,3 +2022,7 @@
   (is (= 'string
          (env/with-compiler-env test-cenv
                               (:tag (analyze test-env '(demunge-str "")))))))
+
+(deftest test-cljs-3070
+  (is (thrown-with-cause-msg? Exception #"Must supply at least one argument for 'this' in: bar"
+        (analyze test-env '(deftype Foo [a b] Object (bar [] 123))))))
