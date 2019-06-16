@@ -7021,7 +7021,7 @@ reduces them without incurring seq initialization"
 
 (declare array->transient-hash-map)
 
-(deftype TransientArrayMap [^:mutable editable?
+(deftype TransientArrayMap [^:mutable ^boolean editable?
                             ^:mutable len
                             arr]
   ICounted
