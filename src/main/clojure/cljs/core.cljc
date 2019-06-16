@@ -1458,7 +1458,13 @@
 (core/defmethod extend-prefix :default
   [tsym sym] `(.. ~tsym ~'-prototype ~(to-property sym)))
 
-(core/defn- adapt-obj-params [type [[this & args :as sig] & body]]
+(core/defn- ensure-this-arg [this f]
+  (core/when (core/nil? this)
+    (throw #?(:clj (Exception. (core/str "Must supply at least one argument for 'this' in: " f))
+              :cljs (js/Error. (core/str "Must supply at least one argument for 'this' in: " f))))))
+
+(core/defn- adapt-obj-params [type f [[this & args :as sig] & body]]
+  (ensure-this-arg this f)
   (core/list (vec args)
     (list* 'this-as (vary-meta this assoc :tag type) body)))
 
@@ -1470,12 +1476,14 @@
            ~@body)))))
 
 ;; for IFn invoke implementations, we need to drop first arg
-(core/defn- adapt-ifn-invoke-params [type [[this & args :as sig] & body]]
+(core/defn- adapt-ifn-invoke-params [type f [[this & args :as sig] & body]]
+  (ensure-this-arg this f)
   `(~(vec args)
      (this-as ~(vary-meta this assoc :tag type)
        ~@body)))
 
-(core/defn- adapt-proto-params [type [[this & args :as sig] & body]]
+(core/defn- adapt-proto-params [type f [[this & args :as sig] & body]]
+  (ensure-this-arg this f)
   (core/let [this' (vary-meta this assoc :tag type)]
     `(~(vec (cons this' args))
       (this-as ~this'
@@ -1487,7 +1495,7 @@
                                 [f [(rest form)]]
                                 [f meths])]
            `(set! ~(extend-prefix type-sym f)
-              ~(with-meta `(fn ~@(map #(adapt-obj-params type %) meths)) (meta form)))))
+              ~(with-meta `(fn ~@(map #(adapt-obj-params type f %) meths)) (meta form)))))
     sigs))
 
 (core/defn- ifn-invoke-methods [type type-sym [f & meths :as form]]
@@ -1496,7 +1504,7 @@
       (core/let [arity (count (first meth))]
         `(set! ~(extend-prefix type-sym (symbol (core/str "cljs$core$IFn$_invoke$arity$" arity)))
            ~(with-meta `(fn ~meth) (meta form)))))
-    (map #(adapt-ifn-invoke-params type %) meths)))
+    (map #(adapt-ifn-invoke-params type f %) meths)))
 
 (core/defn- add-ifn-methods [type type-sym [f & meths :as form]]
   (core/let [meths    (map #(adapt-ifn-params type %) meths)
@@ -1519,10 +1527,10 @@
       ;; single method case
       (core/let [meth meths]
         [`(set! ~(extend-prefix type-sym (core/str pf "$arity$" (count (first meth))))
-            ~(with-meta `(fn ~@(adapt-proto-params type meth)) (meta form)))])
+            ~(with-meta `(fn ~@(adapt-proto-params type f meth)) (meta form)))])
       (map (core/fn [[sig & body :as meth]]
              `(set! ~(extend-prefix type-sym (core/str pf "$arity$" (count sig)))
-                ~(with-meta `(fn ~(adapt-proto-params type meth)) (meta form))))
+                ~(with-meta `(fn ~(adapt-proto-params type f meth)) (meta form))))
         meths))))
 
 (core/defn- proto-assign-impls [env resolve type-sym type [p sigs]]
@@ -1568,7 +1576,7 @@
               (ana/warning :protocol-duped-method env {:protocol p :fname fname}))
             (core/when (some '#{&} sig)
               (ana/warning :protocol-impl-with-variadic-method env {:protocol p :name fname}))
-            (core/when (core/and (not= decmeths ::not-found) (not (some #{c} (map count decmeths))))
+            (core/when (core/and (not= decmeths ::not-found) (not (some #{c} (map count decmeths))) (core/pos? c))
               (ana/warning :protocol-invalid-method env {:protocol p :fname fname :invalid-arity c}))
             (recur (next sigs) (conj seen c))))))))
 
