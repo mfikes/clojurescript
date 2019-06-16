@@ -2054,3 +2054,6 @@
     (is #(= '#{([this] [this x] [this x y])} (set (map :arglists (vals sigs)))))
     (is #(= '#{"foo fn" "bar fn" "baz fn"} (set (map :doc (vals sigs)))))))
 
+(deftest test-cljs-3070
+  (is (thrown-with-cause-msg? Exception #"Must supply at least one argument for 'this' in: bar"
+        (analyze test-env '(deftype Foo [a b] Object (bar [] 123))))))
