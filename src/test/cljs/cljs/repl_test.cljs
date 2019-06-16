@@ -14,3 +14,13 @@
 (deftest test-cljs-3017
   (let [m (cljs.repl/Error->map (js/TypeError.))]
     (is (= 'js/TypeError (get-in m [:via 0 :type])))))
+
+(deftest test-cljs-3110
+  (let [m {:phase :read-source
+           :via [{:data {:clojure.error/source "/home/me/project/src/foo/baz.cljs"}}]}]
+    (is (= "baz.cljs" (:clojure.error/source (cljs.repl/ex-triage m)))))
+  (let [m {:phase :compilation
+           :via [{:data {:clojure.error/source "/home/me/project/src/foo/baz.cljs"}}]}]
+    (is (= "baz.cljs" (:clojure.error/source (cljs.repl/ex-triage m)))))
+  (let [m {:phase :compilation}]
+    (is (nil? (:clojure.error/source (cljs.repl/ex-triage m))))))
