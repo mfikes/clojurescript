@@ -9,6 +9,7 @@
 (ns cljs.repl
   (:require-macros cljs.repl)
   (:require [cljs.spec.alpha :as spec]
+            [clojure.string :as string]
             [goog.string :as gstring]
             [goog.string.format]))
 
@@ -96,6 +97,12 @@
       (when-let [phase (-> o ex-data :clojure.error/phase)]
         {:phase phase}))))
 
+(defn- file-name
+  "Helper to get just the file name part of a path or nil"
+  [full-path]
+  (when full-path
+    (peek (string/split full-path #"/"))))
+
 (defn ex-triage
   "Returns an analysis of the phase, error, cause, and location of an error that occurred
   based on Throwable data, as returned by Throwable->map. All attributes other than phase
@@ -120,13 +127,13 @@
        :read-source
        (let [{:keys [:clojure.error/line :clojure.error/column]} data]
          (cond-> (merge (-> via second :data) top-data)
-           source (assoc :clojure.error/source source)
+           source (assoc :clojure.error/source (file-name source))
            (#{"NO_SOURCE_FILE" "NO_SOURCE_PATH"} source) (dissoc :clojure.error/source)
            message (assoc :clojure.error/cause message)))
 
        (:compile-syntax-check :compilation :macro-syntax-check :macroexpansion)
        (cond-> top-data
-         source (assoc :clojure.error/source source)
+         source (assoc :clojure.error/source (file-name source))
          (#{"NO_SOURCE_FILE" "NO_SOURCE_PATH"} source) (dissoc :clojure.error/source)
          type (assoc :clojure.error/class type)
          message (assoc :clojure.error/cause message)
