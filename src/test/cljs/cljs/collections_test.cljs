@@ -519,7 +519,10 @@
                 :ok))))
       (is (= {:foo 1} (conj m [:foo 1])))
       (is (= {:foo 1} (conj m {:foo 1})))
-      (is (= {:foo 1} (conj m (list [:foo 1])))))
+      (is (= {:foo 1} (conj m (list (->MapEntry :foo 1 nil)))))
+      (is (thrown-with-msg? js/Error
+            #"conj on a map takes map entries or seqables of map entries"
+            (conj m (list [:foo 1])))))
     (doseq [mt [array-map hash-map sorted-map]]
       (is (= {:foo 1 :bar 2 :baz 3}
             (conj (mt :foo 1)
@@ -532,7 +535,7 @@
                      ISeq
                      (-first [this] (first from-seq))
                      (-rest [this] (make-seq (rest from-seq))))))
-                [[:bar 2] [:baz 3]]))))))
+                [(->MapEntry :bar 2 nil) (->MapEntry :baz 3 nil)]))))))
   )
 
 (deftest test-849
