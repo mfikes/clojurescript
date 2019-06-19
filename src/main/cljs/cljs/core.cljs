@@ -6846,7 +6846,7 @@ reduces them without incurring seq initialization"
         (if (nil? es)
           ret
           (let [e (first es)]
-            (if (vector? e)
+            (if (map-entry? e)
               (recur (-assoc ret (-nth e 0) (-nth e 1))
                      (next es))
               (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
@@ -7896,7 +7896,7 @@ reduces them without incurring seq initialization"
         (if (nil? es)
           ret
           (let [e (first es)]
-            (if (vector? e)
+            (if (map-entry? e)
               (recur (-assoc ret (-nth e 0) (-nth e 1))
                      (next es))
               (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
@@ -8769,7 +8769,7 @@ reduces them without incurring seq initialization"
         (if (nil? es)
           ret
           (let [e (first es)]
-            (if (vector? e)
+            (if (map-entry? e)
               (recur (-assoc ret (-nth e 0) (-nth e 1))
                      (next es))
               (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
