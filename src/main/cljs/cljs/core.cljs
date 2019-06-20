@@ -5724,7 +5724,7 @@ reduces them without incurring seq initialization"
     [(key coll) (val coll)]
 
     (vector? coll)
-    (with-meta coll nil)
+    (-with-meta coll nil)
 
     (array? coll)
     (.fromArray PersistentVector coll true)
@@ -6671,7 +6671,7 @@ reduces them without incurring seq initialization"
 
   IWithMeta
   (-with-meta [node meta]
-    (with-meta [key val] meta))
+    (-with-meta [key val] meta))
 
   IStack
   (-peek [node] val)
