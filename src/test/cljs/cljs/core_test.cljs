@@ -1806,3 +1806,14 @@
         v (apply vector a)]
     (aset a 0 :modified)
     (is (= :original (v 0)))))
+
+(deftest test-cljs-3126
+  (is (condp = 1
+        1 true
+        false))
+  (is (condp == 1
+        1 true
+        false))
+  (is (condp keyword-identical? :a
+        :a true
+        false)))
