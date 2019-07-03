@@ -1808,6 +1808,17 @@
   (is (= "a" (get "abc" -0.5)))
   (is (nil? (get "abc" -1))))
 
+(deftest test-cljs-3126
+  (is (condp = 1
+        1 true
+        false))
+  (is (condp == 1
+        1 true
+        false))
+  (is (condp keyword-identical? :a
+        :a true
+        false)))
+
 (deftest test-cljs-3202
   (is (= :/ (keyword "/")))
   (is (= (hash :/) (hash (keyword "/")))))
