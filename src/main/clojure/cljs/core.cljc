@@ -2297,9 +2297,12 @@
                                  (~c p#)
                                  ~(emit pred expr more)))))
              gres (gensym "res__")]
-    `(let [~gpred ~pred
-           ~gexpr ~expr]
-       ~(emit gpred gexpr clauses))))
+    (if (core/symbol? pred)
+      `(let [~gexpr ~expr]
+         ~(emit pred gexpr clauses))
+      `(let [~gpred ~pred
+             ~gexpr ~expr]
+         ~(emit gpred gexpr clauses)))))
 
 (core/defn- assoc-test [m test expr env]
   (if (contains? m test)
