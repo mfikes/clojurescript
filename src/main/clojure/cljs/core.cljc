@@ -2387,6 +2387,14 @@
                ~esym (if (keyword? ~esym) (.-fqn ~(vary-meta esym assoc :tag 'cljs.core/Keyword)) nil)]
            (case* ~esym ~tests ~thens ~default)))
 
+      (every? core/symbol? tests)
+      (core/let [no-default (if (odd? (count clauses)) (butlast clauses) clauses)
+                 tests (mapv #(if (seq? %) (mapv core/str %) [(core/str %)]) (take-nth 2 no-default))
+                 thens (vec (take-nth 2 (drop 1 no-default)))]
+        `(let [~esym ~e
+               ~esym (if (symbol? ~esym) (.-fqn ~(vary-meta esym assoc :tag 'cljs.core/Symbol)) nil)]
+           (case* ~esym ~tests ~thens ~default)))
+
       ;; equality
       :else
       `(let [~esym ~e]
