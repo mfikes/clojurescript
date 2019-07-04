@@ -1249,7 +1249,7 @@
 
 (defmethod emit* :set!
   [{:keys [target val env]}]
-  (emit-wrap env (emits target " = " val)))
+  (emit-wrap env (emits "(" target " = " val ")")))
 
 (defn emit-global-export [ns-name global-exports lib]
   (emitln (munge ns-name) "."
