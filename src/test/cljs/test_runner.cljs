@@ -51,6 +51,7 @@
             [cljs.recur-test]
             [cljs.array-access-test]
             [cljs.inference-test]
+            [cljs.intrinsics-test]
             [cljs.walk-test]
             [cljs.repl-test]
             [cljs.extend-to-native-test]))
@@ -102,6 +103,7 @@
   'cljs.recur-test
   'cljs.array-access-test
   'cljs.inference-test
+  'cljs.intrinsics-test
   'cljs.walk-test
   'cljs.repl-test
   'cljs.extend-to-native-test)
