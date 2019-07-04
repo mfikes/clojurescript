@@ -1141,6 +1141,15 @@
                       (= first-arg-tag 'boolean))
         opt-count? (and (= (:name info) 'cljs.core/count)
                         (boolean ('#{string array} first-arg-tag)))
+        opt-identical (and (== 2 (count (:args expr)))
+                           (= (:name info) 'cljs.core/=)
+                           (case first-arg-tag
+                             cljs.core/Keyword :keyword
+                             cljs.core/Symbol :symbol
+                             (case (ana/infer-tag env (second (:args expr)))
+                               cljs.core/Keyword :keyword
+                               cljs.core/Symbol :symbol
+                               nil)))
         ns (:ns info)
         ftag (ana/infer-tag env f)
         js? (or (= ns 'js) (= ns 'Math) (:foreign info)) ;; foreign - i.e. global / Node.js library
@@ -1199,6 +1208,9 @@
 
        opt-count?
        (emits "((" (first args) ").length)")
+
+       opt-identical
+       (emits "cljs.core." (name opt-identical) "_identical_QMARK_((" (first args) "),(" (second args) "))")
 
        proto?
        (let [pimpl (str (munge (protocol-prefix protocol))
