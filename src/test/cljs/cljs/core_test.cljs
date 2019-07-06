@@ -1795,3 +1795,7 @@
         v (apply vector a)]
     (aset a 0 :modified)
     (is (= :original (v 0)))))
+
+(deftest test-cljs-3130
+  (is (thrown-with-msg? js/Error #"Cannot compare f151d12d-7bd5-4409-9352-5900ee07baf7 to a"
+        (compare (uuid "f151d12d-7bd5-4409-9352-5900ee07baf7") "a"))))
