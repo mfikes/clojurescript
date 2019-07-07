@@ -1145,6 +1145,9 @@
                       (= first-arg-tag 'boolean))
         opt-count? (and (= (:name info) 'cljs.core/count)
                         (boolean ('#{string array} first-arg-tag)))
+        opt-ns-name? (and (contains? '#{cljs.core/namespace cljs.core/name} (:name info))
+                          (contains? '#{cljs.core/Keyword cljs.core/Symbol
+                                        #{cljs.core/Keyword cljs.core/Symbol}} first-arg-tag))
         ns (:ns info)
         js? (or (= ns 'js) (= ns 'Math))
         goog? (when ns
@@ -1202,6 +1205,11 @@
 
        opt-count?
        (emits "((" (first args) ").length)")
+       
+       opt-ns-name?
+       (if (= 'cljs.core/namespace (:name info))
+         (emits "(" (first args) ".ns)")
+         (emits "(" (first args) ".name)"))
 
        proto?
        (let [pimpl (str (munge (protocol-prefix protocol))
