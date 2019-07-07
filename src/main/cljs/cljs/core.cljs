@@ -1871,12 +1871,12 @@ reduces them without incurring seq initialization"
       (-nth coll n)
 
       (array? coll)
-      (if (and (< -1 n (.-length coll)))
+      (if (< -1 n (.-length coll))
         (aget coll (int n))
         (throw (js/Error. "Index out of bounds")))
 
       (string? coll)
-      (if (and (< -1 n (.-length coll)))
+      (if (< -1 n (.-length coll))
         (.charAt coll (int n))
         (throw (js/Error. "Index out of bounds")))
 
@@ -1904,12 +1904,12 @@ reduces them without incurring seq initialization"
       (-nth coll n not-found)
 
       (array? coll)
-      (if (and (< -1 n (.-length coll)))
+      (if (< -1 n (.-length coll))
         (aget coll (int n))
         not-found)
 
       (string? coll)
-      (if (and (< -1 n (.-length coll)))
+      (if (< -1 n (.-length coll))
         (.charAt coll (int n))
         not-found)
 
