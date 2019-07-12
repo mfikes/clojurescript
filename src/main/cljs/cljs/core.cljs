@@ -5380,6 +5380,9 @@ reduces them without incurring seq initialization"
 (defn- vector-index-out-of-bounds [i cnt]
   (throw (js/Error. (str "No item " i " in vector of length " cnt))))
 
+(defn- map-entry-must-be-a-pair []
+  (throw (js/Error. "Vector arg to map conj must be a pair")))
+
 (defn- first-array-for-longvec [pv]
   ;; invariants: (count pv) > 32.
   (loop [node (.-root pv)
@@ -6834,16 +6837,26 @@ reduces them without incurring seq initialization"
 
   ICollection
   (-conj [coll entry]
-    (if (vector? entry)
+    (cond
+      (and (vector? entry) (not (== (count entry) 2)))
+      (map-entry-must-be-a-pair)
+
+      (vector? entry)
       (-assoc coll (-nth entry 0) (-nth entry 1))
+
+      :else
       (loop [ret coll es (seq entry)]
         (if (nil? es)
           ret
           (let [e (first es)]
-            (if (vector? e)
+            (cond
+              (and (vector? e) (not (== (count e) 2)))
+              (map-entry-must-be-a-pair)
+
+              (vector? e)
               (recur (-assoc ret (-nth e 0) (-nth e 1))
                      (next es))
-              (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
+              :else (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
 
   IEmptyableCollection
   (-empty [coll] (-with-meta (.-EMPTY PersistentArrayMap) meta))
@@ -7884,16 +7897,25 @@ reduces them without incurring seq initialization"
 
   ICollection
   (-conj [coll entry]
-    (if (vector? entry)
+    (cond
+      (and (vector? entry) (not (== (count entry) 2)))
+      (map-entry-must-be-a-pair)
+
+      (vector? entry)
       (-assoc coll (-nth entry 0) (-nth entry 1))
-      (loop [ret coll es (seq entry)]
-        (if (nil? es)
-          ret
-          (let [e (first es)]
-            (if (vector? e)
-              (recur (-assoc ret (-nth e 0) (-nth e 1))
-                     (next es))
-              (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
+
+      :else (loop [ret coll es (seq entry)]
+              (if (nil? es)
+                ret
+                (let [e (first es)]
+                  (cond
+                    (and (vector? e) (not (== (count e) 2)))
+                    (map-entry-must-be-a-pair)
+
+                    (vector? e)
+                    (recur (-assoc ret (-nth e 0) (-nth e 1))
+                           (next es))
+                    :else (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
 
   IEmptyableCollection
   (-empty [coll] (-with-meta (.-EMPTY PersistentHashMap) meta))
@@ -8757,16 +8779,25 @@ reduces them without incurring seq initialization"
 
   ICollection
   (-conj [coll entry]
-    (if (vector? entry)
+    (cond
+      (and (vector? entry) (not (== (count entry) 2)))
+      (map-entry-must-be-a-pair)
+
+      (vector? entry)
       (-assoc coll (-nth entry 0) (-nth entry 1))
-      (loop [ret coll es (seq entry)]
-        (if (nil? es)
-          ret
-          (let [e (first es)]
-            (if (vector? e)
-              (recur (-assoc ret (-nth e 0) (-nth e 1))
-                     (next es))
-              (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
+
+      :else (loop [ret coll es (seq entry)]
+              (if (nil? es)
+                ret
+                (let [e (first es)]
+                  (cond
+                    (and (vector? e) (not (== (count e) 2)))
+                    (map-entry-must-be-a-pair)
+
+                    (vector? e)
+                    (recur (-assoc ret (-nth e 0) (-nth e 1))
+                           (next es))
+                    :else (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
 
   IEmptyableCollection
   (-empty [coll] (PersistentTreeMap. comp nil 0 meta 0))
