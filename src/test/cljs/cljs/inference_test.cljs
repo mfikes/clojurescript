@@ -77,7 +77,9 @@
     (delay? nil)
     (uuid? nil)
     (tagged-literal? nil)
-    (cljs.pprint/float? nil)))
+    (cljs.pprint/float? nil)
+    (true? nil)
+    (false? nil)))
 
 (deftest cljs-2866-test
   ;; Here we are testing that in the JavaScript emitted,
