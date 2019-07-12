@@ -2201,11 +2201,11 @@ reduces them without incurring seq initialization"
 
 (def ^:private lookup-sentinel (js-obj))
 
-(defn ^boolean false?
+(defn false?
   "Returns true if x is the value false, false otherwise."
   [x] (cljs.core/false? x))
 
-(defn ^boolean true?
+(defn true?
   "Returns true if x is the value true, false otherwise."
   [x] (cljs.core/true? x))
 
