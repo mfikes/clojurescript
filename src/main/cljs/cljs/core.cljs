@@ -2213,7 +2213,7 @@ reduces them without incurring seq initialization"
   "Return true if x is a Boolean"
   [x] (or (cljs.core/true? x) (cljs.core/false? x)))
 
-(defn ^boolean undefined?
+(defn undefined?
   "Returns true if x identical to the JavaScript undefined value."
   [x]
   (cljs.core/undefined? x))
