@@ -937,7 +937,7 @@
   (core/list 'js* "arguments"))
 
 (core/defmacro js-delete [obj key]
-  (core/list 'js* "delete ~{}[~{}]" obj key))
+  (bool-expr (core/list 'js* "delete ~{}[~{}]" obj key)))
 
 (core/defmacro js-in [key obj]
   (core/list 'js* "~{} in ~{}" key obj))
