@@ -2365,7 +2365,7 @@ reduces them without incurring seq initialization"
             (contains? coll k))
       (MapEntry. k (get coll k) nil))))
 
-(defn ^boolean distinct?
+(defn distinct?
   "Returns true if no two of the arguments are ="
   ([x] true)
   ([x y] (not (= x y)))
