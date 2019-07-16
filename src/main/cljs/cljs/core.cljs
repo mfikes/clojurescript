@@ -180,7 +180,7 @@
    :dup *print-dup*
    :print-length *print-length*})
 
-(declare into-array)
+(declare ^{:arglists '([aseq] [type aseq])} into-array)
 
 (defn enable-console-print!
   "Set *print-fn* to console.log"
@@ -219,7 +219,8 @@
 
 (def not-native nil)
 
-(declare instance? Keyword)
+(declare ^{:arglists '([c x])} instance?
+         Keyword)
 
 (defn ^boolean identical?
   "Tests if 2 arguments are the same object"
@@ -513,7 +514,7 @@
   [array]
   (cljs.core/alength array))
 
-(declare reduce)
+(declare ^{:arglists '([f coll] [f val coll])} reduce)
 
 (defn ^array into-array
   "Returns an array with components set to the values in aseq. Optional type
@@ -949,7 +950,10 @@
 
 ;;;;;;;;;;;;;;;;;;; symbols ;;;;;;;;;;;;;;;
 
-(declare list Symbol = compare)
+(declare ^{:arglists '([& xs])} list
+         Symbol
+         ^{:arglists '([x] [x y] [x y & more])} =
+         ^{:arglists '([x y])} compare)
 
 ;; Simple caching of string hashcode
 (def string-hash-cache (js-obj))
@@ -1055,7 +1059,7 @@
                   nsc)))
    :default (garray/defaultCompare (.-name a) (.-name b))))
 
-(declare get)
+(declare ^{:arglists '([o k] [o k not-found])} get)
 
 (deftype Symbol [ns name str ^:mutable _hash _meta]
   Object
@@ -1185,7 +1189,9 @@
 
 ;;;;;;;;;;;;;;;;;;; fundamentals ;;;;;;;;;;;;;;;
 
-(declare array-seq prim-seq IndexedSeq)
+(declare ^{:arglists '([array] [array i])} array-seq
+         ^{:arglists '([prim] [prim i])} prim-seq
+         IndexedSeq)
 
 (defn iterable?
   "Return true if x implements IIterable protocol."
@@ -1291,7 +1297,7 @@
   [coll]
   (ES6Iterator. (seq coll)))
 
-(declare es6-iterator-seq)
+(declare ^{:arglists '([iter])} es6-iterator-seq)
 
 (deftype ES6IteratorSeq [value iter ^:mutable _rest]
   ISeqable
@@ -1355,7 +1361,8 @@
   (mix-collection-hash 0 0))
 
 ;;;;;;;;;;;;;;;;;;; protocols on primitives ;;;;;;;;
-(declare hash-map list equiv-sequential)
+(declare ^{:arglists '([& keyvals])} hash-map
+         ^{:arglists '([x y])} equiv-sequential)
 
 (extend-type nil
   ICounted
@@ -1398,7 +1405,7 @@
   IEquiv
   (-equiv [x o] (identical? x o)))
 
-(declare with-meta)
+(declare ^{:arglists '([o meta])} with-meta)
 
 (extend-type function
   Fn
@@ -1415,7 +1422,7 @@
   "Returns a number one greater than num."
   [x] (cljs.core/+ x 1))
 
-(declare deref)
+(declare ^{:arglists '([o])} deref)
 
 (deftype Reduced [val]
   IDeref
@@ -1506,7 +1513,13 @@ reduces them without incurring seq initialization"
                (recur nval (inc n))))
            val)))))
 
-(declare hash-coll cons drop count nth RSeq List)
+(declare ^{:arglists '([coll])} hash-coll
+         ^{:arglists '([x coll])} cons
+         ^{:arglists '([n] [n coll])} drop
+         ^{:arglists '([coll])} count
+         ^{:arglists '([coll n] [coll n not-found])} nth
+         RSeq
+         List)
 
 (defn counted?
   "Returns true if coll implements count in constant time"
@@ -1664,7 +1677,7 @@ reduces them without incurring seq initialization"
   ([array i]
      (prim-seq array i)))
 
-(declare with-meta seq-reduce)
+(declare ^{:arglists '([f coll] [f val coll])} seq-reduce)
 
 (deftype RSeq [ci i meta]
   Object
@@ -2419,7 +2432,7 @@ reduces them without incurring seq initialization"
             -1
             (if (f y x) 1 0)))))))
 
-(declare to-array)
+(declare ^{:arglists '([coll])} to-array)
 
 (defn sort
   "Returns a sorted sequence of the items in coll. Comp can be
@@ -2460,7 +2473,7 @@ reduces them without incurring seq initialization"
             (recur nval (next coll))))
         val))))
 
-(declare vec)
+(declare ^{:arglists '([coll])} vec)
 
 (defn shuffle
   "Return a random permutation of coll"
@@ -2608,7 +2621,7 @@ reduces them without incurring seq initialization"
   ([x y] (cljs.core/* x y))
   ([x y & more] (reduce * (cljs.core/* x y) more)))
 
-(declare divide)
+(declare ^{:arglists '([x] [x y] [x y & more])} divide)
 
 (defn ^number /
   "If no denominators are supplied, returns 1/numerator,
@@ -2760,7 +2773,7 @@ reduces them without incurring seq initialization"
 (defn unchecked-negate-int [x]
   (cljs.core/unchecked-negate-int x))
 
-(declare mod)
+(declare ^{:arglists '([n d])} mod)
 
 (defn unchecked-remainder-int [x n]
   (cljs.core/unchecked-remainder-int x n))
@@ -2965,7 +2978,8 @@ reduces them without incurring seq initialization"
   ([s start] ^string (.substring s start))
   ([s start end] ^string (.substring s start end)))
 
-(declare map name)
+(declare ^{:arglists '([f] [f coll] [f c1 c2] [f c1 c2 c3] [f c1 c2 c3 & colls])} map
+         ^{:arglists '([x])} name)
 
 (defn- equiv-sequential
   "Assumes x is sequential. Returns true if x equals y, otherwise
@@ -2990,7 +3004,8 @@ reduces them without incurring seq initialization"
         (recur (hash-combine res (hash (first s))) (next s))))
     0))
 
-(declare key val)
+(declare ^{:arglists '([map-entry])} key
+         ^{:arglists '([map-entry])} val)
 
 (defn- hash-imap [m]
   ;; a la clojure.lang.APersistentMap
@@ -3011,7 +3026,8 @@ reduces them without incurring seq initialization"
                (next s)))
       h)))
 
-(declare name chunk-first chunk-rest)
+(declare ^{:arglists '([s])} chunk-first
+         ^{:arglists '([s])} chunk-rest)
 
 (defn- extend-object!
   "Takes a JavaScript object and a map of names to functions and
@@ -4339,7 +4355,7 @@ reduces them without incurring seq initialization"
      ([a b c] (f (if (nil? a) x a) (if (nil? b) y b) (if (nil? c) z c)))
      ([a b c & ds] (apply f (if (nil? a) x a) (if (nil? b) y b) (if (nil? c) z c) ds)))))
 
-(declare volatile!)
+(declare ^{:arglists '([val])} volatile!)
 
 (defn map-indexed
   "Returns a lazy sequence consisting of the result of applying f to 0
@@ -4449,7 +4465,7 @@ reduces them without incurring seq initialization"
   ([x] (Atom. x nil nil nil))
   ([x & {:keys [meta validator]}] (Atom. x meta validator nil)))
 
-(declare pr-str)
+(declare ^{:arglists '([& objs])} pr-str)
 
 (defn reset!
   "Sets the value of atom to newval without regard for the
@@ -5125,7 +5141,7 @@ reduces them without incurring seq initialization"
                     (cat (first colls) (rest colls))))))]
     (cat nil colls)))
 
-(declare cat)
+(declare ^{:arglists '([rf])} cat)
 
 (defn mapcat
   "Returns the result of applying concat to the result of applying map
@@ -5468,8 +5484,12 @@ reduces them without incurring seq initialization"
            (recur nacc (inc i) arr)))
        acc))))
 
-(declare tv-editable-root tv-editable-tail TransientVector deref
-         pr-sequential-writer pr-writer chunked-seq)
+(declare ^{:arglists '([node])} tv-editable-root
+         ^{:arglists '([tl])} tv-editable-tail
+         TransientVector
+         ^{:arglists '([writer print-one begin sep end opts coll])} pr-sequential-writer
+         ^{:arglists '([obj writer opts])} pr-writer
+         ^{:arglists '([vec i off] [vec node i off] [vec node i off meta])} chunked-seq)
 
 (defprotocol APersistentVector
   "Marker protocol")
@@ -5691,7 +5711,7 @@ reduces them without incurring seq initialization"
 
 (es6-iterable PersistentVector)
 
-(declare map-entry?)
+(declare ^{:arglists '([x])} map-entry?)
 
 (defn vec
   "Creates a new vector containing the contents of coll. JavaScript arrays
@@ -5720,7 +5740,7 @@ reduces them without incurring seq initialization"
     (.fromArray PersistentVector (.-arr args) (not (array? (.-arr args))))
     (vec args)))
 
-(declare subvec)
+(declare ^{:arglists '([v start] [v start end])} subvec)
 
 (deftype ChunkedSeq [vec node i off meta ^:mutable __hash]
   Object
@@ -5814,7 +5834,7 @@ reduces them without incurring seq initialization"
   ([vec node i off meta]
      (ChunkedSeq. vec node i off meta nil)))
 
-(declare build-subvec)
+(declare ^{:arglists '([meta v start end __hash])} build-subvec)
 
 (deftype Subvec [meta v start end ^:mutable __hash]
   Object
@@ -6792,7 +6812,8 @@ reduces them without incurring seq initialization"
   (when (<= i (- (alength arr) 2))
     (PersistentArrayMapSeq. arr i _meta)))
 
-(declare keys vals)
+(declare ^{:arglists '([map])} keys
+         ^{:arglists '([map])} vals)
 
 (deftype PersistentArrayMapIterator [arr ^:mutable i cnt]
   Object
@@ -7034,7 +7055,7 @@ reduces them without incurring seq initialization"
 
 (es6-iterable PersistentArrayMap)
 
-(declare array->transient-hash-map)
+(declare ^{:arglists '([len arr])} array->transient-hash-map)
 
 (deftype TransientArrayMap [^:mutable editable?
                             ^:mutable len
@@ -7129,7 +7150,11 @@ reduces them without incurring seq initialization"
 
 (deftype Box [^:mutable val])
 
-(declare create-inode-seq create-array-node-seq reset! create-node atom deref)
+(declare ^{:arglists '([nodes] [nodes i s])} create-inode-seq
+         ^{:arglists '([nodes] [nodes i s])} create-array-node-seq
+         ^{:arglists '([a new-value])} reset!
+         ^{:arglists '([shift key1 val1 key2hash key2 val2] [edit shift key1 val1 key2hash key2 val2])} create-node
+         ^{:arglists '([x] [x & {:keys [meta validator]}])} atom)
 
 (defn key-test [key other]
   (cond
@@ -8735,8 +8760,6 @@ reduces them without incurring seq initialization"
           (neg? c)  (.replace tree tk (.-val tree) (tree-map-replace comp (.-left tree) k v) (.-right tree))
           :else     (.replace tree tk (.-val tree) (.-left tree) (tree-map-replace comp (.-right tree) k v)))))
 
-(declare key)
-
 (deftype PersistentTreeMap [comp tree cnt meta ^:mutable __hash]
   Object
   (toString [coll]
@@ -10099,7 +10122,7 @@ reduces them without incurring seq initialization"
          (fn [match] (unchecked-get char-escapes match)))
        \"))
 
-(declare print-map)
+(declare ^{:arglists '([m print-one writer opts])} print-map)
 
 (defn print-meta? [opts obj]
   (and (boolean (get opts :meta))
@@ -10659,7 +10682,7 @@ reduces them without incurring seq initialization"
                 (rf result input))))))))
   ([coll] (sequence (dedupe) coll)))
 
-(declare rand)
+(declare ^{:arglists '([] [n])} rand)
 
 (defn random-sample
   "Returns items from coll with random probability of prob (0.0 -
@@ -10720,7 +10743,10 @@ reduces them without incurring seq initialization"
   (-key->js [x] "Transforms map keys to valid JavaScript keys. Arbitrary keys are
   encoded to their string representation via (pr-str x)"))
 
-(declare clj->js)
+(declare ^{:arglists '([x & {:keys [keyword-fn]
+                             :or   {keyword-fn name}
+                             :as options}])}
+         clj->js)
 
 (defn key->js
   ([k] (key->js k clj->js))
