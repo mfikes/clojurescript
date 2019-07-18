@@ -2064,6 +2064,11 @@
     (is #(= '#{([this] [this x] [this x y])} (set (map :arglists (vals sigs)))))
     (is #(= '#{"foo fn" "bar fn" "baz fn"} (set (map :doc (vals sigs)))))))
 
+(deftest test-cljs-3103
+  (is (= 'array
+         (env/with-compiler-env test-cenv
+           (:tag (analyze test-env '(js-keys nil)))))))
+
 (deftest test-cljs-3133
   (is (= (ana/no-warn
            (env/with-compiler-env test-cenv
