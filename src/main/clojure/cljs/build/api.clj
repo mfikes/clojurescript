@@ -135,6 +135,7 @@
   "DEPRECATED: Given one or more IJavaScript objects in dependency order, produce
   a new sequence of IJavaScript objects which includes the input list
   plus all dependencies in dependency order."
+  {:deprecated "1.10.191"}
   [opts & ijss]
   (closure/add-dependencies opts ijss))
 
