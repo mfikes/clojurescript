@@ -936,6 +936,7 @@
   "DEPRECATED: Given one or more IJavaScript objects in dependency order, produce
   a new sequence of IJavaScript objects which includes the input list
   plus all dependencies in dependency order."
+  {:deprecated "1.10.191"}
   [opts & inputs]
   (let [inputs        (set inputs)
         requires      (set (mapcat deps/-requires inputs))
