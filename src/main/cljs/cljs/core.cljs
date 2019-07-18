@@ -2919,6 +2919,7 @@ reduces them without incurring seq initialization"
 
 (defn bit-shift-right-zero-fill
   "DEPRECATED: Bitwise shift right with zero fill"
+  {:deprecated "1.7.10"}
   [x n] (cljs.core/bit-shift-right-zero-fill x n))
 
 (defn unsigned-bit-shift-right
@@ -5027,6 +5028,7 @@ reduces them without incurring seq initialization"
 (defn replicate
   "DEPRECATED: Use 'repeat' instead.
   Returns a lazy seq of n xs."
+  {:deprecated "1.8.51"}
   [n x] (take n (repeat x)))
 
 (defn repeatedly

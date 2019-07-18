@@ -4286,6 +4286,7 @@
      "DEPRECATED: Seq of Clojure/ClojureScript forms from [f], which can be anything
      for which `clojure.java.io/reader` can produce a `java.io.Reader`. Optionally
      accepts a [filename] argument, which the reader will use in any emitted errors."
+     {:deprecated "1.7.10"}
      ([f] (forms-seq f (source-path f)))
      ([f filename] (forms-seq f filename false))
      ([f filename return-reader?]
