@@ -7,7 +7,8 @@
 ;   You must not remove this notice, or any other, from this software.
 
 (ns clojure.reflect
-  ^{:doc "DEPRECATED. Do not use, superceded by REPL enhancements."}
+  {:doc "DEPRECATED. Do not use, superceded by REPL enhancements."
+   :deprecated "1.7.10"}
   (:refer-clojure :exclude [meta macroexpand])
   (:require [clojure.browser.net :as net]
             [clojure.browser.event :as event]))
