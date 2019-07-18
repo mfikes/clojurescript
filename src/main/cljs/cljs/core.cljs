@@ -2183,7 +2183,7 @@ reduces them without incurring seq initialization"
   ([& keyvals]
      (apply gobject/create keyvals)))
 
-(defn js-keys
+(defn ^array js-keys
   "Return the JavaScript keys for an object."
   [obj]
   (gobject/getKeys obj))
