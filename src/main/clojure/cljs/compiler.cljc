@@ -507,7 +507,7 @@
 (defn distinct-keys? [keys]
   (let [keys (map ana/unwrap-quote keys)]
     (and (every? #(= (:op %) :const) keys)
-         (= (count (into #{} keys)) (count keys)))))
+         (all-distinct? (map :val keys)))))
 
 (defn emit-map [keys vals comma-sep distinct-keys?]
   (cond
