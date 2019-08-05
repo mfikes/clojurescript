@@ -15,3 +15,9 @@
   (doseq [n (range 64)]
     (is (= (get base64/int->char n) (base64/encode n))))
   (is (thrown-with-msg? Error #"Must be between 0 and 63: 64" (base64/encode 64))))
+
+(deftest decode-test
+  (doseq [n (range 64)]
+    (let [c (nth base64/chars64 n)]
+      (is (= n (base64/decode c)))))
+  (is (thrown-with-msg? Error #"Not a valid base 64 digit: @" (base64/decode \@))))
