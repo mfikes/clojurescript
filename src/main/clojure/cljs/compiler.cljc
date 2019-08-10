@@ -1141,6 +1141,9 @@
                       (= first-arg-tag 'boolean))
         opt-count? (and (= (:name info) 'cljs.core/count)
                         (boolean ('#{string array} first-arg-tag)))
+        opt-deref-var-literal? (and (= (:name info) 'cljs.core/deref)
+                                    (= :the-var (:op (first (:args expr)))))
+        opt-invoke-var-literal? (= :the-var (:op f))
         ns (:ns info)
         ftag (ana/infer-tag env f)
         js? (or (= ns 'js) (= ns 'Math) (:foreign info)) ;; foreign - i.e. global / Node.js library
@@ -1200,6 +1203,9 @@
        opt-count?
        (emits "((" (first args) ").length)")
 
+       opt-deref-var-literal?
+       (emits (munge (:name (:var (first (:args expr))))))
+
        proto?
        (let [pimpl (str (munge (protocol-prefix protocol))
                         (munge (name (:name info))) "$arity$" (count args))]
@@ -1227,7 +1233,9 @@
                     f "(" (comma-sep args) "))")
              (emits "(" f fprop " ? " f fprop "(" (comma-sep args) ") : "
                     f ".call(" (comma-sep (cons "null" args)) "))")))
-         (emits f ".call(" (comma-sep (cons "null" args)) ")"))))))
+         (if opt-invoke-var-literal?
+           (emits (munge (:name (:var f))) ".call(" (comma-sep (cons "null" args)) ")")
+           (emits f ".call(" (comma-sep (cons "null" args)) ")")))))))
 
 (defmethod emit* :new
   [{ctor :class :keys [args env]}]
