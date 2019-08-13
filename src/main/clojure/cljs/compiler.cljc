@@ -630,6 +630,14 @@
   (let [tag (ana/infer-tag env e)]
     (or (#{'boolean 'seq} tag) (truthy-constant? e))))
 
+(defn falsey-tag? [env e]
+  (let [tag (ana/->type-set (ana/infer-tag env e))]
+    (= #{'clj-nil} tag)))
+
+(defn truthy-tag? [env e]
+  (let [tag (ana/->type-set (ana/infer-tag env e))]
+    (empty? (disj tag 'number 'string 'array 'object 'function))))
+
 (defmethod emit* :if
   [{:keys [test then else env unchecked]}]
   (let [context (:context env)
@@ -637,6 +645,8 @@
     (cond
       (truthy-constant? test) (emitln then)
       (falsey-constant? test) (emitln else)
+      (truthy-tag? env test) (emitln then)
+      (falsey-tag? env test) (emitln else)
       :else
       (if (= :expr context)
         (emits "(" (when checked "cljs.core.truth_") "(" test ")?" then ":" else ")")

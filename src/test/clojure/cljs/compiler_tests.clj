@@ -242,6 +242,41 @@
                           (fn [] (analyze aenv specify-test-code nil opts))))))))))))
 
 
+(deftest test-cljs-2875
+  (let [opts {}
+        cenv (env/default-compiler-env opts)
+        emit (fn [form]
+               (env/with-compiler-env cenv
+                (with-out-str
+                  (emit (comp/with-core-cljs {}
+                   (fn [] (analyze (assoc aenv :context :expr) form)))))))]
+
+    (testing "should replace with `then` branch"
+      (is (.startsWith (emit '(if (str 1) true false))
+                       "true"))
+      (is (.startsWith (emit '(if (inc 1) true false))
+                       "true"))
+      (is (.startsWith (emit '(if (array) true false))
+                       "true"))
+      (is (.startsWith (emit '(if (js-obj) true false))
+                       "true"))
+      (is (.startsWith (emit '(if (fn []) true false))
+                       "true")))
+
+    (testing "should replace with `else` branch"
+      (is (.startsWith (emit '(if (prn) true false))
+                       "false")))
+
+    (testing "should not replace with any of the branches"
+      (is (= (emit '(if (seq "a") true false))
+             "((cljs.core.seq.call(null,\"a\"))?true:false)"))
+      (is (= (emit '(if (true? 1) true false))
+             "(((1) === true)?true:false)"))
+      (is (= (emit '(if (range 1) true false))
+             "(cljs.core.truth_(cljs.core.range.call(null,(1)))?true:false)"))
+      (is (= (emit '(if js/x true false))
+             "(cljs.core.truth_(x)?true:false)")))))
+
 (deftest test-optimized-invoke-emit
   (let [out-file
         (io/file "target/invoke_test.js")]
