@@ -2491,9 +2491,9 @@
                        [`(. ~target ~val) alt]
                        [target val])]
     (disallowing-recur
-      (binding [*private-var-access-nowarn* true]
-        (let [enve  (assoc env :context :expr)
-              texpr (cond
+      (let [enve  (assoc env :context :expr)
+            texpr (binding [*private-var-access-nowarn* true]
+                    (cond
                       (symbol? target)
                       (do
                         (cond
@@ -2523,32 +2523,32 @@
                       (when (seq? target)
                         (let [texpr (analyze-seq enve target nil)]
                           (when (:field texpr)
-                            texpr))))
-              vexpr (analyze enve val)]
-          ;; as top level fns are decomposed for Closure cross-module code motion, we need to
-          ;; restore their :methods information
-          (when (seq? target)
-            (let [sym  (some-> target second)
-                  meta (meta sym)]
-              (when-let [info (and (= :fn (:op vexpr)) (:top-fn meta))]
-                (swap! env/*compiler* update-in
-                  [::namespaces (-> env :ns :name) :defs sym :methods]
-                  (fnil conj [])
-                  ;; just use original fn meta, as the fn method is already desugared
-                  ;; only get tag from analysis
-                  (merge
-                    (select-keys info [:fixed-arity :variadic?])
-                    (select-keys (-> vexpr :methods first) [:tag]))))))
-          (when-not texpr
-            (throw (error env "set! target must be a field or a symbol naming a var")))
-          (cond
-            (and (not (:def-emits-var env))                 ;; non-REPL context
-                 (some? ('#{*unchecked-if* *unchecked-arrays* *warn-on-infer*} target)))
-            {:env env :op :no-op}
+                            texpr)))))
+            vexpr (analyze enve val)]
+        ;; as top level fns are decomposed for Closure cross-module code motion, we need to
+        ;; restore their :methods information
+        (when (seq? target)
+          (let [sym  (some-> target second)
+                meta (meta sym)]
+            (when-let [info (and (= :fn (:op vexpr)) (:top-fn meta))]
+              (swap! env/*compiler* update-in
+                     [::namespaces (-> env :ns :name) :defs sym :methods]
+                     (fnil conj [])
+                     ;; just use original fn meta, as the fn method is already desugared
+                     ;; only get tag from analysis
+                     (merge
+                       (select-keys info [:fixed-arity :variadic?])
+                       (select-keys (-> vexpr :methods first) [:tag]))))))
+        (when-not texpr
+          (throw (error env "set! target must be a field or a symbol naming a var")))
+        (cond
+          (and (not (:def-emits-var env))                 ;; non-REPL context
+               (some? ('#{*unchecked-if* *unchecked-arrays* *warn-on-infer*} target)))
+          {:env env :op :no-op}
 
-            :else
-            {:env env :op :set! :form form :target texpr :val vexpr
-             :children [:target :val]}))))))
+          :else
+          {:env env :op :set! :form form :target texpr :val vexpr
+           :children [:target :val]})))))
 
 #?(:clj (declare analyze-file))
 
