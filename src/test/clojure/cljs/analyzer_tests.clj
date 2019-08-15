@@ -733,6 +733,25 @@
       (is (= ["var: test.cljs-1702-a/test-fn-a is not public"
               "var: test.cljs-1702-a/a is not public"] @ws)))))
 
+(deftest test-cljs-2823
+  (let [ws (atom [])]
+    (ana/with-warning-handlers [(collecting-warning-handler ws)]
+     (env/with-compiler-env test-cenv
+        (ana/analyze-form-seq
+          '[(ns foo.core)
+            (defn- foo [])])
+        (ana/analyze-form-seq
+          '[(ns bar.core)
+            (defn bar
+              ([] (foo.core/foo))
+              ([x] (foo.core/foo)))
+            (defn baz [& xs]
+              (foo.core/foo))]))
+     (is (= @ws
+            ["var: foo.core/foo is not public"
+             "var: foo.core/foo is not public"
+             "var: foo.core/foo is not public"])))))
+
 (deftest test-cljs-1763
   (let [parsed (ana/parse-ns-excludes {} '())]
     (is (= parsed
