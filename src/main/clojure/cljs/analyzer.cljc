@@ -1250,10 +1250,7 @@
            (do
              (when (some? confirm)
                (confirm env 'cljs.core sym))
-             (merge (gets @env/*compiler* ::namespaces 'cljs.core :defs sym)
-               {:name (symbol "cljs.core" (str sym))
-                :op :var
-                :ns 'cljs.core}))
+             (resolve* env sym 'cljs.core current-ns))
 
            (invokeable-ns? s env)
            (resolve-invokeable-ns s current-ns env)

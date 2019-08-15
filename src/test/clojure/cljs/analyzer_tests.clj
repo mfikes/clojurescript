@@ -723,6 +723,13 @@
       (is (= ["var: test.cljs-1702-a/test-fn-a is not public"
               "var: test.cljs-1702-a/a is not public"] @ws)))))
 
+(deftest test-cljs-3069
+  (let [ws (atom [])]
+    (ana/with-warning-handlers [(collecting-warning-handler ws)]
+     (env/with-compiler-env test-cenv
+      (analyze (ana/empty-env) '(maybe-warn 1)))
+     (is (= ["var: cljs.core/maybe-warn is not public"] @ws)))))
+
 (deftest test-cljs-1763
   (let [parsed (ana/parse-ns-excludes {} '())]
     (is (= parsed
