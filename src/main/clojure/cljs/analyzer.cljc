@@ -1184,7 +1184,8 @@
                   :ret-tag ret-tag})))))
        (let [s  (str sym)
              lb (handle-symbol-local sym (get locals sym))
-             current-ns (-> env :ns :name)]
+             current-ns (-> env :ns :name)
+             sym-full-ns (gets @env/*compiler* ::namespaces current-ns :defs sym)]
          (cond
            (some? lb) (assoc lb :op :local)
 
@@ -1237,23 +1238,20 @@
            (some? (gets @env/*compiler* ::namespaces current-ns :imports sym))
            (recur env (gets @env/*compiler* ::namespaces current-ns :imports sym) confirm)
 
-           (some? (gets @env/*compiler* ::namespaces current-ns :defs sym))
+           (some? sym-full-ns)
            (do
              (when (some? confirm)
                (confirm env current-ns sym))
-             (merge (gets @env/*compiler* ::namespaces current-ns :defs sym)
+             (merge sym-full-ns
                {:name (symbol (str current-ns) (str sym))
                 :op :var
                 :ns current-ns}))
 
-           (core-name? env sym)
+           (and (core-name? env sym) (nil? sym-full-ns))
            (do
              (when (some? confirm)
                (confirm env 'cljs.core sym))
-             (merge (gets @env/*compiler* ::namespaces 'cljs.core :defs sym)
-               {:name (symbol "cljs.core" (str sym))
-                :op :var
-                :ns 'cljs.core}))
+             (resolve* env sym 'cljs.core current-ns))
 
            (invokeable-ns? s env)
            (resolve-invokeable-ns s current-ns env)
@@ -1262,7 +1260,7 @@
            (do
              (when (some? confirm)
                (confirm env current-ns sym))
-             (merge (gets @env/*compiler* ::namespaces current-ns :defs sym)
+             (merge sym-full-ns
                {:name (symbol (str current-ns) (str sym))
                 :op :var
                 :ns current-ns}))))))))

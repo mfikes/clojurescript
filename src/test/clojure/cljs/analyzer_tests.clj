@@ -723,6 +723,21 @@
       (is (= ["var: test.cljs-1702-a/test-fn-a is not public"
               "var: test.cljs-1702-a/a is not public"] @ws)))))
 
+(deftest test-cljs-3069
+  (testing "should warn about private core var"
+    (let [ws (atom [])]
+      (ana/with-warning-handlers [(collecting-warning-handler ws)]
+       (env/with-compiler-env test-cenv
+        (analyze (ana/empty-env) '(maybe-warn 1)))
+       (is (= ["var: cljs.core/maybe-warn is not public"] @ws)))))
+
+  (testing "should not warn about a var shadowing core var"
+    (let [ws (atom [])]
+      (ana/with-warning-handlers [(collecting-warning-handler ws)]
+       (env/with-compiler-env test-cenv
+        (analyze (ana/empty-env) '(def lookup-sentinel 3)))
+       (is (= [] @ws))))))
+
 (deftest test-cljs-1763
   (let [parsed (ana/parse-ns-excludes {} '())]
     (is (= parsed
