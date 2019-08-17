@@ -739,6 +739,17 @@
              (println x)))))
     (is (.startsWith (first @ws) "js/foo is shadowed by a local"))))
 
+(deftest test-cljs-2902
+  (let [analyze-with-warn (fn [form]
+                            (let [ws (atom [])]
+                              (ana/with-warning-handlers [(collecting-warning-handler ws)]
+                                 (analyze (ana/empty-env) form))
+                              @ws))]
+    (is (= (first (analyze-with-warn '(let [^string x 1] x)))
+           "Type hint #{string} doesn't match inferred type #{number}"))
+    (is (= (empty? (analyze-with-warn '(let [^string x (if js/x nil "x")] x)))))
+    (is (= (empty? (analyze-with-warn '(let [^string x (range 1)] x)))))))
+
 (deftest test-cljs-2005
   (let [ws (atom [])]
     (try

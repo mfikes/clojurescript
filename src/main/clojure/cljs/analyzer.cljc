@@ -159,7 +159,8 @@
    :unsupported-js-module-type true
    :unsupported-preprocess-value true
    :js-shadowed-by-local true
-   :infer-warning false})
+   :infer-warning false
+   :type-hint-mismatch-with-inferred true})
 
 (defn unchecked-arrays? []
   *unchecked-arrays*)
@@ -509,6 +510,10 @@
                    " for inferred type " type  " in expression " form)
     :object   (str "Adding extern to Object for property " property " due to "
                    "ambiguous expression " form)))
+
+(defmethod error-message :type-hint-mismatch-with-inferred
+  [warning-type {:keys [tag inf-tag]}]
+  (str "Type hint " tag " doesn't match inferred type " inf-tag))
 
 (defn default-warning-handler [warning-type env extra]
   (when (warning-type *cljs-warnings*)
@@ -1438,34 +1443,46 @@
           ret-tag
           ANY_SYM)))))
 
+(defn type-hint-mismatch? [tag inf-tag]
+  (cond
+    (contains? inf-tag 'any) false
+    (== 1 (count tag) (count inf-tag)) (not= tag inf-tag)
+    (= inf-tag (conj tag 'clj-nil)) false
+    :else false))
+
 (defn infer-tag
   "Given env, an analysis environment, and e, an AST node, return the inferred
    type of the node"
   [env e]
-    (if-some [tag (get-tag e)]
-      tag
-      (case (:op e)
-        :recur    IGNORE_SYM
-        :throw    IGNORE_SYM
-        :let      (infer-tag env (:body e))
-        :loop     (infer-tag env (:body e))
-        :do       (infer-tag env (:ret e))
-        :fn-method (infer-tag env (:body e))
-        :def      (infer-tag env (:init e))
-        :invoke   (infer-invoke env e)
-        :if       (infer-if env e)
-        :const    (case (:form e)
-                    true BOOLEAN_SYM
-                    false BOOLEAN_SYM
-                    ANY_SYM)
-        :quote    (infer-tag env (:expr e))
-        (:var :local :js-var :binding)
-                  (if-some [init (:init e)]
-                    (infer-tag env init)
-                    (infer-tag env (:info e)))
-        (:host-field :host-call)      ANY_SYM
-        :js       ANY_SYM
-        nil)))
+  (let [tag (get-tag e)
+        inf-tag (case (:op e)
+                 :recur    IGNORE_SYM
+                 :throw    IGNORE_SYM
+                 :let      (infer-tag env (:body e))
+                 :loop     (infer-tag env (:body e))
+                 :do       (infer-tag env (:ret e))
+                 :fn-method (infer-tag env (:body e))
+                 :def      (infer-tag env (:init e))
+                 :invoke   (infer-invoke env e)
+                 :if       (infer-if env e)
+                 :const    (case (:form e)
+                             true BOOLEAN_SYM
+                             false BOOLEAN_SYM
+                             ANY_SYM)
+                 :quote    (infer-tag env (:expr e))
+                 (:var :local :js-var :binding)
+                 (if-some [init (:init e)]
+                   (infer-tag env init)
+                   (infer-tag env (:info e)))
+                 (:host-field :host-call)      ANY_SYM
+                 :js       ANY_SYM
+                 nil)]
+    (when (and tag inf-tag)
+      (let [tag (-> tag canonicalize-type ->type-set)
+            inf-tag (-> inf-tag canonicalize-type ->type-set)]
+        (when (type-hint-mismatch? tag inf-tag)
+          (warning :type-hint-mismatch-with-inferred env {:tag tag :inf-tag inf-tag}))))
+    (or tag inf-tag)))
 
 (defmulti parse (fn [op & rest] op))
 
