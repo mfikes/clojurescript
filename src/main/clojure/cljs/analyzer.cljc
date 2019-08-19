@@ -3625,6 +3625,8 @@
                         (not (all-values? args)))]
     (when ^boolean fn-var?
       (let [{^boolean variadic :variadic? :keys [max-fixed-arity method-params name ns macro]} (:info fexpr)]
+        (when (= \. (first (clojure.core/name name)))
+          (throw (error env (str "Cannot call a symbol starts with ." \space (str name)))))
         ;; don't warn about invalid arity when when compiling a macros namespace
         ;; that requires itself, as that code is not meant to be executed in the
         ;; `$macros` ns - António Monteiro

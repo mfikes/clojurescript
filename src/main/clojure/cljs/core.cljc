@@ -3269,6 +3269,10 @@
                  [name doc-string? attr-map? ([params*] prepost-map? body)+ attr-map?])
     :macro true}
   defn (core/fn defn [&form &env name & fdecl]
+         (when (= \. (first (clojure.core/name name)))
+           (throw
+            #?(:clj (IllegalArgumentException. "Function name cannot start with `.` special!")
+               :cljs (js/Error. "Function name cannot start with `.` special!"))))
          ;; Note: Cannot delegate this check to def because of the call to (with-meta name ..)
          (if (core/instance? #?(:clj clojure.lang.Symbol :cljs Symbol) name)
            nil

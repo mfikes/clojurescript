@@ -2101,3 +2101,7 @@
            (env/with-compiler-env test-cenv
              (:tag (ana/analyze test-env '(let [x ^any []] (if (implements? ICounted x) x nil))))))
         '#{cljs.core/ICounted clj-nil})))
+
+(deftest test-cljs-3152
+  (is (thrown? Exception (env/with-compiler-env test-cenv
+                           (ana/analyze test-env '(defn .test-fn-starts-with-dot!))))))
