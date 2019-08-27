@@ -1578,3 +1578,13 @@ str-or-pattern."
              (-parse-error repl-env ret *repl-opts*)
              ret)
            nil *repl-opts*))))))
+
+(defmacro add-lib
+  [[quote lib] coord]
+  (try
+    (require 'clojure.tools.deps.alpha.repl)
+    (when-let [add-lib (resolve 'clojure.tools.deps.alpha.repl/add-lib)]
+      (add-lib lib coord))
+    (catch Exception e
+      (.printStackTrace e)
+      nil)))

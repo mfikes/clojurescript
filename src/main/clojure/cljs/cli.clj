@@ -643,6 +643,8 @@ present"
   sequence of command line flags."
   [repl-env & args]
   (try
+    (let [cl (.getContextClassLoader (Thread/currentThread))]
+      (.setContextClassLoader (Thread/currentThread) (clojure.lang.DynamicClassLoader. cl)))
     (let [commands (merged-commands repl-env)]
       (if args
         (loop [[opt arg & more :as args] (normalize commands args) inits []]
