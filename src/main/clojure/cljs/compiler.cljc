@@ -1166,6 +1166,10 @@
                   (= (count mps) 1))
              [f nil]
 
+             ;; if fn is from a closure lib, arity info known but static dispatch unavailable
+             (:closure info)
+             [f nil]
+
              ;; direct dispatch to variadic case
              (and variadic? (> arity mfa))
              [(update-in f [:info]

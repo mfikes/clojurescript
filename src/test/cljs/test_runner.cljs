@@ -53,6 +53,7 @@
             [cljs.inference-test]
             [cljs.walk-test]
             [cljs.repl-test]
+            [cljs.closure-fn-test]
             [cljs.extend-to-native-test]))
 
 (set! *print-newline* false)
@@ -104,4 +105,5 @@
   'cljs.inference-test
   'cljs.walk-test
   'cljs.repl-test
+  'cljs.closure-fn-test
   'cljs.extend-to-native-test)

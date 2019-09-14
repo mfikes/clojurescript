@@ -64,6 +64,7 @@
                 (let [arglist  (into [] (map symbol (.getParameterNames info)))
                       arglists (params->method-params arglist)]
                   {:tag             'Function
+                   :closure         true
                    :fn-var          true
                    :ret-tag         (get-tag (.getReturnType info))
                    :variadic?       (boolean (some '#{var_args} arglist))

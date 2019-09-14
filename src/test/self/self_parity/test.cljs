@@ -318,6 +318,7 @@
                  [cljs.inference-test]
                  [cljs.walk-test]
                  [cljs.repl-test]
+                 [cljs.closure-fn-test]
                  [cljs.extend-to-native-test]))
     (fn [{:keys [value error]}]
       (if error
@@ -367,6 +368,7 @@
              'cljs.inference-test
              'cljs.walk-test
              'cljs.repl-test
+             'cljs.closure-fn-test
              'cljs.extend-to-native-test)
           (fn [{:keys [value error]}]
             (when error
