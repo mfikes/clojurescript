@@ -3585,7 +3585,8 @@
 (defn- valid-arity?
   #?(:cljs {:tag boolean})
   [argc method-params]
-  (boolean (some #{argc} (map count method-params))))
+  (or (nil? method-params)  ; Assume valid if method-params unavailable
+      (boolean (some #{argc} (map count method-params)))))
 
 (defn- record-tag?
   [tag]
