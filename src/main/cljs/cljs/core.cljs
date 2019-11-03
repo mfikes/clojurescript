@@ -7068,7 +7068,7 @@ reduces them without incurring seq initialization"
   ICounted
   (-count [tcoll]
     (if editable?
-      (quot len 2)
+      (bit-shift-right len 1)
       (throw (js/Error. "count after persistent!"))))
 
   ILookup
@@ -7104,7 +7104,7 @@ reduces them without incurring seq initialization"
   (-persistent! [tcoll]
     (if editable?
       (do (set! editable? false)
-          (PersistentArrayMap. nil (quot len 2) arr nil))
+          (PersistentArrayMap. nil (bit-shift-right len 1) arr nil))
       (throw (js/Error. "persistent! called twice"))))
 
   ITransientAssociative
