@@ -1428,9 +1428,21 @@
                              else-tag #{else-tag})]
               (into then-tag else-tag))))))))
 
+(defmulti infer-higher-order-tag (fn [env ast] (:name (:fn ast))))
+
+(defmethod infer-higher-order-tag :default [_ _] nil)
+
+(defmethod infer-higher-order-tag 'cljs.core/identity [env ast]
+  (let [arg (first (:args ast))]
+    (cond
+      (:fn-var (:info arg)) 'function
+      :else (infer-tag env arg))))
+
+
 (defn infer-invoke [env {f :fn :keys [args] :as e}]
-  (let [me (assoc (find-matching-method f args) :op :fn-method)]
-    (if-some [ret-tag (infer-tag env me)]
+  (if-some [tag (infer-higher-order-tag env e)]
+    tag
+    (if-some [ret-tag (infer-tag env (assoc (find-matching-method f args) :op :fn-method))]
       ret-tag
       (let [{:keys [info]} f]
         (if-some [ret-tag (if (or (true? (:fn-var info))
