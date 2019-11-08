@@ -2131,3 +2131,17 @@
                                           a
                                           (recur b 1)))))))
         'any)))
+
+(deftest cljs-3180
+  (is (= (env/with-compiler-env test-cenv
+            (:tag (analyze test-env '(identity 1))))
+         'number))
+  (is (= (env/with-compiler-env test-cenv
+            (:tag (analyze test-env '(identity (inc 1)))))
+         'number))
+  (is (= (env/with-compiler-env test-cenv
+            (:tag (analyze test-env '(identity str))))
+         'function))
+  (is (= (env/with-compiler-env test-cenv
+            (:tag (analyze test-env '(identity js/x))))
+         'js)))
