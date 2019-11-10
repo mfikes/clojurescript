@@ -1775,9 +1775,11 @@ reduces them without incurring seq initialization"
   ([] [])
   ([coll] coll)
   ([coll x]
-    (if-not (nil? coll)
-      (-conj coll x)
-      (list x)))
+   (if (implements? ICollection coll)
+     (-conj coll x)
+     (if-not (nil? coll)
+       (-conj coll x)
+       (list x))))
   ([coll x & xs]
     (if xs
       (recur (conj coll x) (first xs) (next xs))
