@@ -2076,16 +2076,20 @@ reduces them without incurring seq initialization"
   "For a list or queue, same as first, for a vector, same as, but much
   more efficient than, last. If the collection is empty, returns nil."
   [coll]
-  (when-not (nil? coll)
-    (-peek coll)))
+  (if (implements? IStack coll)
+    (-peek coll)
+    (when-not (nil? coll)
+      (-peek coll))))
 
 (defn pop
   "For a list or queue, returns a new list/queue without the first
   item, for a vector, returns a new vector without the last item.
   Note - not the same as next/butlast."
   [coll]
-  (when-not (nil? coll)
-    (-pop coll)))
+  (if (implements? IStack coll)
+    (-pop coll)
+    (when-not (nil? coll)
+      (-pop coll))))
 
 (defn disj
   "disj[oin]. Returns a new set of the same (hashed/sorted) type, that
