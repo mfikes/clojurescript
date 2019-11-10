@@ -2077,7 +2077,9 @@ reduces them without incurring seq initialization"
   more efficient than, last. If the collection is empty, returns nil."
   [coll]
   (when-not (nil? coll)
-    (-peek coll)))
+    (if (some? (.-cljs$core$IStack$_peek$arity$1 coll))
+      (.cljs$core$IStack$_peek$arity$1 coll)
+      (-peek coll))))
 
 (defn pop
   "For a list or queue, returns a new list/queue without the first
@@ -2085,7 +2087,9 @@ reduces them without incurring seq initialization"
   Note - not the same as next/butlast."
   [coll]
   (when-not (nil? coll)
-    (-pop coll)))
+    (if (some? (.-cljs$core$IStack$_pop$arity$1 coll))
+      (.cljs$core$IStack$_pop$arity$1 coll)
+      (-pop coll))))
 
 (defn disj
   "disj[oin]. Returns a new set of the same (hashed/sorted) type, that
