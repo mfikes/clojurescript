@@ -2042,6 +2042,7 @@
 
 (defn- analyze-fn-method [env locals form type analyze-body?]
   (let [param-names     (first form)
+        tag             (:tag (meta param-names))
         variadic        (boolean (some '#{&} param-names))
         param-names     (vec (remove '#{&} param-names))
         body            (next form)
@@ -2071,6 +2072,8 @@
        :type type
        :form form
        :recurs recurs}
+      (when (some? tag)
+        {:tag tag})
       (if (some? expr)
         {:body (assoc expr :body? true)
          :children [:params :body]}
@@ -2157,7 +2160,9 @@
         children     (if (some? name-var)
                        [:local :methods]
                        [:methods])
-        inferred-ret-tag (let [inferred-tags (map (partial infer-tag env) (map :body methods))]
+        methods      (map #(assoc % :tag (or (:tag %) (infer-tag env (:body %))))
+                          methods)
+        inferred-ret-tag (let [inferred-tags (map :tag methods)]
                            (when (apply = inferred-tags)
                              (first inferred-tags)))
         ast   (merge {:op :fn

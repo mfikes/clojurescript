@@ -2110,3 +2110,16 @@
                                           a
                                           (recur b 1)))))))
         'any)))
+
+(deftest test-cljs-3188
+  (is (= (env/with-compiler-env test-cenv
+          (:tag (analyze test-env
+                         '(let [f (fn (^number [n] n))]
+                            (f 1)))))
+         'number))
+  (is (= (env/with-compiler-env test-cenv
+          (:tag (analyze test-env
+                         '(do
+                            (defn f (^number [n] n))
+                            (f 1)))))
+         'number)))
