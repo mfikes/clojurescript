@@ -1427,6 +1427,17 @@
                              else-tag #{else-tag})]
               (into then-tag else-tag))))))))
 
+(declare invalid-arity?)
+
+(defn get-ret-tag [e]
+  (let [info (:info e)]
+    (cond
+      (or (true? (:fn-var info))
+          (true? (:js-fn-var info)))
+      (:ret-tag info)
+
+      (= 'js (:ns info)) 'js)))
+
 (defmulti infer-higher-order-tag (fn [env ast] (:name (:fn ast))))
 
 (defmethod infer-higher-order-tag :default [_ _] nil)
@@ -1437,19 +1448,30 @@
       (:fn-var (:info arg)) 'function
       :else (infer-tag env arg))))
 
+(defmethod infer-higher-order-tag 'cljs.core/apply [env ast]
+  (let [[f & args] (:args ast)
+        fixed-argc (dec (count args))
+        {:keys [variadic? max-fixed-arity name ret-tag methods]} (:info f)]
+    (when (and (not variadic?)
+               (number? max-fixed-arity)
+               (> fixed-argc max-fixed-arity))
+      (warning :fn-arity (:env f) {:name name :argc fixed-argc}))
+    (if (some? ret-tag)
+      ret-tag
+      (if (some? methods)
+        (let [tags (->> methods
+                        (filter #(or (>= (:fixed-arity %) fixed-argc)
+                                     (:variadic? %)))
+                        (map :tag))]
+          (when (seq tags)
+            (apply add-types tags)))))))
+
 
 (defn infer-invoke [env {f :fn :keys [args] :as e}]
-  (if-some [tag (infer-higher-order-tag env e)]
-    tag
-    (if-some [ret-tag (infer-tag env (assoc (find-matching-method f args) :op :fn-method))]
-      ret-tag
-      (let [{:keys [info]} f]
-        (if-some [ret-tag (if (or (true? (:fn-var info))
-                                  (true? (:js-fn-var info)))
-                            (:ret-tag info)
-                            (when (= 'js (:ns info)) 'js))]
-          ret-tag
-          ANY_SYM)))))
+  (or (infer-higher-order-tag env e)
+      (infer-tag env (assoc (find-matching-method f args) :op :fn-method))
+      (get-ret-tag f)
+      ANY_SYM))
 
 (defn infer-tag
   "Given env, an analysis environment, and e, an AST node, return the inferred
@@ -2054,6 +2076,7 @@
 
 (defn- analyze-fn-method [env locals form type analyze-body?]
   (let [param-names     (first form)
+        tag             (:tag (meta param-names))
         variadic        (boolean (some '#{&} param-names))
         param-names     (vec (remove '#{&} param-names))
         body            (next form)
@@ -2083,6 +2106,8 @@
        :type type
        :form form
        :recurs recurs}
+      (when (some? tag)
+        {:tag tag})
       (if (some? expr)
         {:body (assoc expr :body? true)
          :children [:params :body]}
@@ -2169,7 +2194,9 @@
         children     (if (some? name-var)
                        [:local :methods]
                        [:methods])
-        inferred-ret-tag (let [inferred-tags (map (partial infer-tag env) (map :body methods))]
+        methods      (map #(assoc % :tag (or (:tag %) (infer-tag env (:body %))))
+                          methods)
+        inferred-ret-tag (let [inferred-tags (map :tag methods)]
                            (when (apply = inferred-tags)
                              (first inferred-tags)))
         ast   (merge {:op :fn

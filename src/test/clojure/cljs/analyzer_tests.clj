@@ -2124,3 +2124,36 @@
   (is (= (env/with-compiler-env test-cenv
             (:tag (analyze test-env '(identity js/x))))
          'js)))
+
+(deftest test-cljs-3186
+  (let [analyze-forms (fn [forms]
+                        (env/with-compiler-env test-cenv
+                         (:tag (ana/analyze-form-seq forms nil true))))]
+    (testing "should propagate manual return type hint"
+      (is (= (analyze-forms '[(defn ^number f [n] n)
+                              (apply f [1])])
+             'number)))
+    (testing "should propagate inferred return type"
+      (is (= (analyze-forms '[(defn f [] 1)
+                              (apply f [])])
+             'number)))
+    (testing "should resolve to a set of all return types"
+      (is (= (analyze-forms '[(defn f
+                                (^boolean [n] n)
+                                ([a b] (str a b))
+                                ([a b & xs] (apply + a b xs)))
+                              (apply f [1 2 3])])
+             '#{boolean string number})))
+    (testing "should resolve to a set of return types of matching methods"
+      (is (= (analyze-forms '[(defn f
+                                (^boolean [n] n)
+                                ([a b] (str a b))
+                                ([a b & xs] (apply + a b xs)))
+                              (apply f 1 2 [2 3])])
+             '#{string number})))
+    (testing "should resolve to the return type of a matching method"
+      (let [ws (atom [])]
+        (ana/with-warning-handlers [(collecting-warning-handler ws)]
+         (env/with-compiler-env test-cenv
+          (:tag (analyze test-env '(apply identity 1 2 3 [2 3])))))
+        (is (= (first @ws) "Wrong number of args (3) passed to cljs.core/identity"))))))
