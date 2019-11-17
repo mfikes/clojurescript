@@ -1029,6 +1029,20 @@
     (persistent! t)
     (is (= :fail (try (get t :a :not-found) (catch js/Error e :fail))))))
 
+(deftest test-cljs-3111
+  (testing "Check for pair when conj vector on map"
+    (is (= :fail (try (conj (array-map :a 1) [:b 2 2]) (catch js/Error e :fail))))
+    (is (= :fail (try (conj (array-map :a 1) [:b]) (catch js/Error e :fail))))
+    (is (= :fail (try (conj (array-map :a 1) []) (catch js/Error e :fail))))
+
+    (is (= :fail (try (conj (hash-map :a 1) [:b 2 2]) (catch js/Error e :fail))))
+    (is (= :fail (try (conj (hash-map :a 1) [:b]) (catch js/Error e :fail))))
+    (is (= :fail (try (conj (hash-map :a 1) []) (catch js/Error e :fail))))
+
+    (is (= :fail (try (conj (sorted-map :a 1) [:b 2 2]) (catch js/Error e :fail))))
+    (is (= :fail (try (conj (sorted-map :a 1) [:b]) (catch js/Error e :fail))))
+    (is (= :fail (try (conj (sorted-map :a 1) []) (catch js/Error e :fail))))))
+
 (comment
 
   (run-tests)
