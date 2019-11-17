@@ -286,6 +286,30 @@
       (is (str/includes? content "cljs.invoke_test.foo_record.foo_field_a;")))))
 #_(test-vars [#'test-optimized-invoke-emit])
 
+(deftest test-cljs-2874
+  (let [opts {:static-fns true}
+        cenv (env/default-compiler-env opts)
+        emit (fn [form]
+               (env/with-compiler-env cenv
+                (with-out-str
+                  (emit
+                    (comp/with-core-cljs opts
+                     (fn [] (analyze (assoc aenv :context :expr) form)))))))]
+    (testing "should not emit checked `if`"
+      (is (= (emit '(if (true? 1) 1 0))
+             "(((1) === true)?(1):(0))"))
+      (is (= (emit '(if (seq "a") 1 0))
+             "((cljs.core.seq.call(null,\"a\"))?(1):(0))"))
+      (is (= (emit '(if (prn 1) 1 0))
+             "((cljs.core.prn.call(null,(1)))?(1):(0))"))
+      (let [ret (emit '(do (defn f1 [x]
+                             (cond
+                               x true
+                               x (seq "x")
+                               :else nil))
+                           (defn f2 [x] (if (f1 x) 1 2))))]
+        (is (str/includes? ret "if(cljs.user.f1.call(null,x)){"))))))
+
 (deftest test-cljs-3077
   (let [opts {}
         cenv (env/default-compiler-env opts)
