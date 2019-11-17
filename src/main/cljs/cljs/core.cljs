@@ -5389,8 +5389,16 @@ reduces them without incurring seq initialization"
             (pv-aset ret subidx node-to-insert)
             ret))))))
 
+(defn- vector-count [v]
+  (if (implements? IVector v)
+    (-count ^not-native v)
+    (-count v)))
+
 (defn- vector-index-out-of-bounds [i cnt]
   (throw (js/Error. (str "No item " i " in vector of length " cnt))))
+
+(defn- map-entry-must-be-a-pair []
+  (throw (js/Error. "Vector arg to map conj must be a pair")))
 
 (defn- first-array-for-longvec [pv]
   ;; invariants: (count pv) > 32.
@@ -6849,14 +6857,18 @@ reduces them without incurring seq initialization"
   ICollection
   (-conj [coll entry]
     (if (vector? entry)
-      (-assoc coll (-nth entry 0) (-nth entry 1))
+      (if (not (== (vector-count entry) 2))
+        (map-entry-must-be-a-pair)
+        (-assoc coll (-nth entry 0) (-nth entry 1)))
       (loop [ret coll es (seq entry)]
         (if (nil? es)
           ret
           (let [e (first es)]
             (if (vector? e)
-              (recur (-assoc ret (-nth e 0) (-nth e 1))
-                     (next es))
+              (if (not (== (vector-count e) 2))
+                (map-entry-must-be-a-pair)
+                (recur (-assoc ret (-nth e 0) (-nth e 1))
+                       (next es)))
               (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
 
   IEmptyableCollection
@@ -7899,14 +7911,18 @@ reduces them without incurring seq initialization"
   ICollection
   (-conj [coll entry]
     (if (vector? entry)
-      (-assoc coll (-nth entry 0) (-nth entry 1))
+      (if (not (== (vector-count entry) 2))
+        (map-entry-must-be-a-pair)
+        (-assoc coll (-nth entry 0) (-nth entry 1)))
       (loop [ret coll es (seq entry)]
         (if (nil? es)
           ret
           (let [e (first es)]
             (if (vector? e)
-              (recur (-assoc ret (-nth e 0) (-nth e 1))
-                     (next es))
+              (if (not (== (vector-count e) 2))
+                (map-entry-must-be-a-pair)
+                (recur (-assoc ret (-nth e 0) (-nth e 1))
+                       (next es)))
               (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
 
   IEmptyableCollection
@@ -8772,14 +8788,18 @@ reduces them without incurring seq initialization"
   ICollection
   (-conj [coll entry]
     (if (vector? entry)
-      (-assoc coll (-nth entry 0) (-nth entry 1))
+      (if (not (== (vector-count entry) 2))
+        (map-entry-must-be-a-pair)
+        (-assoc coll (-nth entry 0) (-nth entry 1)))
       (loop [ret coll es (seq entry)]
         (if (nil? es)
           ret
           (let [e (first es)]
             (if (vector? e)
-              (recur (-assoc ret (-nth e 0) (-nth e 1))
-                     (next es))
+              (if (not (== (vector-count e) 2))
+                (map-entry-must-be-a-pair)
+                (recur (-assoc ret (-nth e 0) (-nth e 1))
+                       (next es)))
               (throw (js/Error. "conj on a map takes map entries or seqables of map entries"))))))))
 
   IEmptyableCollection
