@@ -627,17 +627,21 @@
              (falsey-constant? const-expr)))))
 
 (defn safe-test? [env e]
-  (let [tag (ana/infer-tag env e)]
-    (or (#{'boolean 'seq} tag) (truthy-constant? e))))
+  (let [tag (-> (ana/infer-tag env e) ana/canonicalize-type ana/->type-set)]
+    (or (and (or (tag 'boolean)
+                 (tag 'seq)
+                 (tag 'clj-nil))
+             (empty? (disj tag 'boolean 'seq 'clj-nil)))
+        (truthy-constant? e))))
 
 (defmethod emit* :if
   [{:keys [test then else env unchecked]}]
-  (let [context (:context env)
-        checked (not (or unchecked (safe-test? env test)))]
-    (cond
-      (truthy-constant? test) (emitln then)
-      (falsey-constant? test) (emitln else)
-      :else
+  (cond
+    (truthy-constant? test) (emitln then)
+    (falsey-constant? test) (emitln else)
+    :else
+    (let [context (:context env)
+          checked (not (or unchecked (safe-test? env test)))]
       (if (= :expr context)
         (emits "(" (when checked "cljs.core.truth_") "(" test ")?" then ":" else ")")
         (do
