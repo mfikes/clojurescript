@@ -1803,3 +1803,7 @@
         v (apply vector a)]
     (aset a 0 :modified)
     (is (= :original (v 0)))))
+
+(deftest test-cljs-3173
+  (is (= :matched (case '(3 4) ((1 2) (3 4)) :matched)))
+  (is (= :matched (case '((6 7 8) (9 10)) (((1 2 3) (4 5)) ((6 7 8) (9 10))) :matched))))

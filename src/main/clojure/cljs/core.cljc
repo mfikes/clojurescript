@@ -2326,6 +2326,7 @@
 
 (core/defn- const? [env x]
   (core/let [m (core/and (core/list? x)
+                         (core/var? (last x))
                          (ana/resolve-var env (last x)))]
     (core/when m (core/get m :const))))
 
@@ -2366,7 +2367,7 @@
                            (seq? test)
                            (reduce
                              (core/fn [m test]
-                               (core/let [test (if (core/symbol? test)
+                               (core/let [test (if (core/or (core/symbol? test) (seq? test))
                                                  (core/list 'quote test)
                                                  test)]
                                  (assoc-test m test expr env)))
