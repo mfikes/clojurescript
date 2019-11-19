@@ -2121,3 +2121,17 @@
              (:a (->Foo))))))
     (is (= 1 (count @ws)))
     (is (string/starts-with? (first @ws) "Wrong number of args (0) passed to cljs.user/->Foo"))))
+
+(deftest test-cljs-3181
+  (let [ws  (atom [])
+        res (binding [ana/*cljs-static-fns* true]
+              (infer-test-helper
+                {:forms '[(ns warn-on-infer-test.app)
+                          (set! *warn-on-infer* true)
+                          (defn f [gfn]
+                            (.then ^js/Promise (gfn (inc 1)) identity))]
+                 :externs ["src/test/externs/test.js"]
+                 :warnings ws
+                 :warn false
+                 :with-core? true}))]
+    (is (empty? @ws))))
