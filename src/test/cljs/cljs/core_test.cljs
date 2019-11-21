@@ -1711,6 +1711,22 @@
   (is (zero? (count [])))
   (is (== 1 (count [1]))))
 
+(deftest test-cljs-3195
+  (is (= "a" (first "a")))
+  (is (= 1 (first #js [1])))
+  (is (nil? (first "")))
+  (is (nil? (first #js [])))
+
+  (is (= "b" (second "ab")))
+  (is (= 2 (second #js [1 2])))
+  (is (nil? (second "")))
+  (is (nil? (second #js [])))
+
+  (is (empty? ""))
+  (is (empty? #js []))
+  (is (not (empty? "a")))
+  (is (not (empty? #js [1]))))
+
 (deftest test-cljs-2934
   (let [x (delay 1)]
     (is (= "#object[cljs.core.Delay {:status :pending, :val nil}]" (pr-str x)))

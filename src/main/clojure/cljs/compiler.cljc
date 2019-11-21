@@ -1145,6 +1145,12 @@
                       (= first-arg-tag 'boolean))
         opt-count? (and (= (:name info) 'cljs.core/count)
                         (boolean ('#{string array} first-arg-tag)))
+        opt-first? (and (= (:name info) 'cljs.core/first)
+                        (contains? '#{string array} first-arg-tag))
+        opt-second? (and (= (:name info) 'cljs.core/second)
+                         (contains? '#{string array} first-arg-tag))
+        opt-empty? (and (= (:name info) 'cljs.core/empty?)
+                        (contains? '#{string array} first-arg-tag))
         ns (:ns info)
         ftag (ana/infer-tag env f)
         js? (or (= ns 'js) (= ns 'Math) (:foreign info)) ;; foreign - i.e. global / Node.js library
@@ -1203,6 +1209,15 @@
 
        opt-count?
        (emits "((" (first args) ").length)")
+
+       opt-first?
+       (emits "((" (first args) ")[0])")
+
+       opt-second?
+       (emits "((" (first args) ")[1])")
+
+       opt-empty?
+       (emits "((" (first args) ").length === 0)")
 
        proto?
        (let [pimpl (str (munge (protocol-prefix protocol))
