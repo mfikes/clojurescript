@@ -1803,3 +1803,24 @@
         v (apply vector a)]
     (aset a 0 :modified)
     (is (= :original (v 0)))))
+
+(deftest test-cljs-3199
+  (let [o #js {}
+        oempty #js {}
+        _ (aset o cljs.core/ITER_SYMBOL
+                (fn []
+                  (let [v (atom 0)]
+                    #js {:next #(if (< @v 5)
+                                  #js {:done false :value (swap! v inc)}
+                                  #js {:done true})})))
+        _ (aset oempty cljs.core/ITER_SYMBOL (fn [] #js {:next (fn [] #js {:done true})}))
+        oseq (seq o)
+        oemptyseq (seq oempty)]
+    (is (= [1 2 3 4 5] oseq))
+    (is (= "(1 2 3 4 5)" (str oseq)))
+    (is (= 1 (-first oseq)))
+    (is (= [2 3 4 5] (-rest oseq)))
+    (is (= '() (-rest oemptyseq)))
+    (is (= oseq (clone oseq)))
+    (is (= {:x 1} (meta (with-meta oseq {:x 1}))))
+    (is (= [1 2 3 4 5] (js->clj (clj->js oseq))))))

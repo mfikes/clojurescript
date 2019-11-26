@@ -1202,10 +1202,12 @@
   [value]
   (satisfies? ICloneable value))
 
+(declare es6-iterator-seq)
+
 (defn ^seq seq
   "Returns a seq on the collection. If the collection is
   empty, returns nil.  (seq nil) returns nil. seq also works on
-  Strings."
+  Strings, Arrays and any objects that implement JavaScript's Iterator protocol."
   [coll]
   (when-not (nil? coll)
     (cond
@@ -1222,6 +1224,10 @@
 
       (native-satisfies? ISeqable coll)
       (-seq coll)
+
+      ^boolean (js-in ITER_SYMBOL coll)
+      (let [it (aget coll ITER_SYMBOL)]
+        (es6-iterator-seq (.call it coll)))
 
       :else (throw (js/Error. (str coll " is not ISeqable"))))))
 
@@ -1291,17 +1297,56 @@
   [coll]
   (ES6Iterator. (seq coll)))
 
-(declare es6-iterator-seq)
+(declare equiv-sequential clj->js)
 
-(deftype ES6IteratorSeq [value iter ^:mutable _rest]
+(defprotocol IEncodeJS
+  (-clj->js [x] "Recursively transforms clj values to JavaScript")
+  (-key->js [x] "Transforms map keys to valid JavaScript keys. Arbitrary keys are
+  encoded to their string representation via (pr-str x)"))
+
+(deftype ES6IteratorSeq [meta value iter ^:mutable _rest]
+  Object
+  (toString [coll]
+    (pr-str* coll))
+  (equiv [this other]
+    (-equiv this other))
+
+  ISequential
+  IEquiv
+  (-equiv [coll other] (equiv-sequential coll other))
+
   ISeqable
   (-seq [this] this)
+
   ISeq
   (-first [_] value)
   (-rest [_]
     (when (nil? _rest)
       (set! _rest (es6-iterator-seq iter)))
-    _rest))
+    _rest)
+
+  ICloneable
+  (-clone [coll]
+    (ES6IteratorSeq. meta value iter _rest))
+
+  IWithMeta
+  (-with-meta [coll new-meta]
+    (if (identical? new-meta meta)
+      coll
+      (ES6IteratorSeq. new-meta value iter _rest)))
+
+  IMeta
+  (-meta [coll] meta)
+
+  IEncodeJS
+  (-clj->js [coll]
+    (let [arr (array)]
+      (loop [^not-native xs coll]
+        (if-not (nil? xs)
+          (do
+            (.push arr (clj->js (-first xs)))
+            (recur (seq (-rest xs))))
+          arr)))))
 
 (defn es6-iterator-seq
   "EXPERIMENTAL: Given an ES2015 compatible iterator return a seq."
@@ -1309,7 +1354,7 @@
   (let [v (.next iter)]
     (if (.-done v)
       ()
-      (ES6IteratorSeq. (.-value v) iter nil))))
+      (ES6IteratorSeq. nil (.-value v) iter nil))))
 
 ;;;;;;;;;;;;;;;;;;; Murmur3 Helpers ;;;;;;;;;;;;;;;;
 
@@ -1355,7 +1400,7 @@
   (mix-collection-hash 0 0))
 
 ;;;;;;;;;;;;;;;;;;; protocols on primitives ;;;;;;;;
-(declare hash-map list equiv-sequential)
+(declare hash-map list)
 
 (extend-type nil
   ICounted
@@ -10685,13 +10730,6 @@ reduces them without incurring seq initialization"
   [proc coll]
   (reduce #(proc %2) nil coll)
   nil)
-
-(defprotocol IEncodeJS
-  (-clj->js [x] "Recursively transforms clj values to JavaScript")
-  (-key->js [x] "Transforms map keys to valid JavaScript keys. Arbitrary keys are
-  encoded to their string representation via (pr-str x)"))
-
-(declare clj->js)
 
 (defn key->js
   ([k] (key->js k clj->js))
