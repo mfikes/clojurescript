@@ -123,3 +123,10 @@
 
 (deftest test-515
   (is (== 1 (.-x (->PositionalFactoryTest 1)))))
+
+(defrecord CLJS3201 [foo bar! constructor])
+
+(deftest test-cljs-3201
+  (is (= 1 (:foo (->CLJS3201 1 2 3))))
+  (is (= 2 (:bar! (->CLJS3201 1 2 3))))
+  (is (= 3 (:constructor (->CLJS3201 1 2 3)))))

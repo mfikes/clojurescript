@@ -48,3 +48,11 @@
 (def foo-record (->Foo 1 2))
 
 (:foo-field-a foo-record)
+
+(defrecord CLJS3201 [foo bar! constructor])
+
+(def cljs-3201-record (->CLJS3201 1 2 3))
+
+(:foo cljs-3201-record)
+(:bar! cljs-3201-record)
+(:constructor cljs-3201-record)
