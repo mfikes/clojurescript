@@ -283,7 +283,11 @@
       ;; CLJS-1871: A declare hinted with :arglists meta should result in static dispatch
       (is (str/includes? content "cljs.invoke_test.declared_fn("))
       ;; CLJS-2950: Direct field access for keyword lookup on records
-      (is (str/includes? content "cljs.invoke_test.foo_record.foo_field_a;")))))
+      (is (str/includes? content "cljs.invoke_test.foo_record.foo_field_a;"))
+      ;; CLJS-3201: Direct field access for keyword lookup: munging
+      (is (str/includes? content "cljs.invoke_test.cljs_3201_record.foo;"))
+      (is (str/includes? content "cljs.invoke_test.cljs_3201_record.bar_BANG_;"))
+      (is (str/includes? content "cljs.invoke_test.cljs_3201_record.constructor$;")))))
 #_(test-vars [#'test-optimized-invoke-emit])
 
 (deftest test-cljs-3077

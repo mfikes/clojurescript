@@ -3697,7 +3697,10 @@
                       (nil? (namespace f)))
                  (== 1 (count args))
                  (record-with-field? (:tag (first argexprs)) (symbol (name f))))
-          (let [field-access-form (list* (symbol (str ".-" (name f))) args)]
+          (let [property (name f)
+                ; emit-dot doesn't munge js-reserved names; do so here to match defrecord field munging
+                property (cond-> property (contains? js-reserved property) (str "$"))
+                field-access-form (list* (symbol (str ".-" property)) args)]
             (no-warn (analyze env field-access-form)))
           {:env      env :op :invoke :form form :fn fexpr :args argexprs
            :children [:fn :args]})))))
