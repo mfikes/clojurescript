@@ -62,10 +62,7 @@ returns the set of all symbols naming vars in those nses."
   (when-let [v (ana-api/resolve &env s)]
     (let [var-name (:name v)]
       (when (and (nil? (:const v))
-                 #?(:cljs (nil? (:macro v)))
-                 (contains? #?(:clj (s/speced-vars)
-                               :cljs (cljs.spec.alpha$macros/speced-vars))
-                            var-name))
+                 #?(:cljs (nil? (:macro v))))
         (swap! instrumented-vars conj var-name)
         `(let [checked# (#'instrument-1* '~s (var ~s) ~opts)]
            (when checked# (set! ~s checked#))
