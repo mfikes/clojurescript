@@ -1808,6 +1808,10 @@
   (is (= "a" (get "abc" -0.5)))
   (is (nil? (get "abc" -1))))
 
+(deftest test-cljs-3173
+  (is (= :matched (case '(3 4) ((1 2) (3 4)) :matched)))
+  (is (= :matched (case '((6 7 8) (9 10)) (((1 2 3) (4 5)) ((6 7 8) (9 10))) :matched))))
+
 (deftest test-cljs-3202
   (is (= :/ (keyword "/")))
   (is (= (hash :/) (hash (keyword "/")))))
