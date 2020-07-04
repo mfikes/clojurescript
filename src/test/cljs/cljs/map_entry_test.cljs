@@ -139,6 +139,7 @@
         (is (zero? (-compare e [:key :val])))))))
 
 (deftest all-map-entry-tests
+  (is false)
   (testing "BlackNode"
     (map-entry-interface-tests (BlackNode. :key :val nil nil nil)))
   (testing "RedNode"
