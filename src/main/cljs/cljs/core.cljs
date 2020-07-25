@@ -9909,7 +9909,7 @@ reduces them without incurring seq initialization"
   "Returns a lazy seq of nums from start (inclusive) to end
    (exclusive), by step, where start defaults to 0, step to 1,
    and end to infinity."
-  ([] (iterate inc 0))
+  ([] (range 0 (.-MAX_VALUE js/Number) 1))
   ([end] (range 0 end 1))
   ([start end] (range start end 1))
   ([start end step]
