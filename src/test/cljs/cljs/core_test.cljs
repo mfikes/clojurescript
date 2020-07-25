@@ -1819,3 +1819,6 @@
 (deftest test-cljs-3202
   (is (= :/ (keyword "/")))
   (is (= (hash :/) (hash (keyword "/")))))
+
+(deftest slashy-test
+  (is (== 1 (/ 1))))
