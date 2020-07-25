@@ -9819,14 +9819,15 @@ reduces them without incurring seq initialization"
                   (if (< n 32)
                     (do
                       (aset arr n val)
-                      (let [val (+ val step)]
-                        (if (< val end)
-                          (recur (inc n) val)
+                      (let [n (inc n)
+                            val (+ val step)]
+                        (if (if (pos? step) (< val end) (> val end))
+                          (recur n val)
                           (set! chunk (array-chunk arr 0 n)))))
                     val))]
         (when (nil? chunk)
           (set! chunk (array-chunk arr 0 32))
-          (when (< val end)
+          (when (if (pos? step) (< val end) (> val end))
             (set! chunk-next (Range. nil val end step nil nil nil)))))))
 
   ICloneable
