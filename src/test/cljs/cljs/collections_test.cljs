@@ -149,8 +149,8 @@
          (prop/for-all [start gen/int
                         end gen/int
                         step gen/s-pos-int]
-                       (= (Range. start end step)
-                          (IntegerRange. start end step))))
+                       (= (Range. nil start end step nil nil nil)
+                          (IntegerRange. nil start end step nil nil nil))))
 
 (deftest test-range
   (testing "Testing Range"
