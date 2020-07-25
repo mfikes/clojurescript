@@ -1596,7 +1596,7 @@
   (is (satisfies? IChunk (chunk-first (chunk-next (range 33)))))
   (is (satisfies? IChunk (chunk-first (chunk-rest (range 33)))))
   (is (not (chunked-seq? (range 2 -2 0))))
-  (is (chunked-seq? (range)))
+  (is (not (chunked-seq? (range))))
   (is (= 5 (count (chunk-first (range 5)))))
   (is (= 32 (count (chunk-first (range)))))
   (is (= 17 (nth (chunk-first (range 100)) 17)))

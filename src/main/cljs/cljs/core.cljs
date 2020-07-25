@@ -9892,7 +9892,7 @@ reduces them without incurring seq initialization"
   (-hash [rng] (caching-hash rng hash-ordered-coll __hash))
 
   IReduce
-  (-reduce [rng f] (ci-reduce rng f))
+  (-reduce [rng f] (seq-reduce f rng))
   (-reduce [rng f init]
     (loop [i start ret init]
       (if (if (pos? step) (< i end) (> i end))
