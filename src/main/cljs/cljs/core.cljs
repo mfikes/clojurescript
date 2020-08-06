@@ -80,8 +80,7 @@
   [f]
   (and
    (exists? js/setTimeout)
-   (js/setTimeout f 0)
-   true))
+   (boolean (js/setTimeout f 0))))
 
 (defonce
   ^{:doc "Each runtime environment provides a different way to print error output.
