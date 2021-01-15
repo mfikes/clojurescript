@@ -84,9 +84,15 @@
   [ts]
   (if-let [[years months days hours minutes seconds ms offset]
            (parse-and-validate-timestamp ts)]
-    (js/Date.
-      (- (.UTC js/Date years (dec months) days hours minutes seconds ms)
-        (* offset 60 1000)))
+    (if (< years 100)
+      ;; For dates in the 1st century, use a (slightly slower) implementation
+      ;; that doesn't map 2-digit years to the 20th century.
+      (doto (js/Date. 0)
+        (.setUTCFullYear years (dec months) days)
+        (.setUTCHours hours (- minutes offset) seconds ms))
+      (js/Date.
+        (- (.UTC js/Date years (dec months) days hours minutes seconds ms)
+          (* offset 60 1000))))
     (throw (js/Error. (str "Unrecognized date/time syntax: " ts)))))
 
 (defn ^:private read-date
