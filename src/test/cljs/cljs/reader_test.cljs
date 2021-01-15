@@ -9,6 +9,10 @@
 (ns cljs.reader-test
   (:require [cljs.test :refer-macros [deftest testing is] :as test]
             [cljs.reader :as reader]
+            [clojure.test.check]
+            [clojure.test.check.clojure-test :refer-macros [defspec]]
+            [clojure.test.check.generators :as gen :include-macros true]
+            [clojure.test.check.properties :as prop :include-macros true]
             [goog.object :as o]))
 
 (deftype T [a b])
@@ -231,6 +235,38 @@
     (is (= "Set literal contains duplicate key: :a" c))
     (is (= "Set literal contains duplicate key: :a" d))
     ))
+
+(defspec parse-timestamp-test 1000
+  (let [normalize (fn [n len]
+                    (loop [ns (str n)]
+                      (if (< (count ns) len)
+                        (recur (str "0" ns))
+                        ns)))
+        form-ts (fn [years months days hours minutes seconds ms offset-pos? offset-hours offset-mins]
+                  (str (normalize years 4) "-"
+                    (normalize months 2) "-"
+                    (normalize days 2) "T"
+                    (normalize hours 2) ":"
+                    (normalize minutes 2) ":"
+                    (normalize seconds 2) "."
+                    (normalize ms 3)
+                    (if offset-pos? "+" "-")
+                    (normalize offset-hours 2) ":"
+                    (normalize offset-mins 2)))
+        ts-gen (gen/let [years (gen/choose 0 9999)
+                         months (gen/choose 1 12)
+                         days (gen/choose 1 (#'reader/days-in-month months (#'reader/leap-year? years)))
+                         hours (gen/choose 0 23)
+                         minutes (gen/choose 0 23)
+                         seconds (gen/choose 0 23)
+                         ms (gen/choose 0 999)
+                         offset-pos? gen/boolean
+                         offset-hours (gen/choose 0 23)
+                         offset-mins (gen/choose 0 59)]
+                 (form-ts years months days hours minutes seconds ms offset-pos? offset-hours offset-mind))]
+    (prop/for-all [ts ts-gen]
+      ;; Ensure we can parse proleptic Gregorian just like JavaScript.
+      (== (.parse js/Date ts) (inst-ms (reader/parse-timestamp ts))))))
 
 ;; Not relevant now that we rely on tools.reader and it duplicates Clojure's behavior - David
 ;(deftest test-error-messages
