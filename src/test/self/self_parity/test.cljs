@@ -296,6 +296,7 @@
                  [clojure.datafy-test]
                  [clojure.edn]
                  [clojure.walk-test]
+                 [clojure.zip-test]
                  [cljs.macro-test]
                  [cljs.letfn-test]
                  [foo.ns-shadow-test]
@@ -343,6 +344,7 @@
              'clojure.datafy-test
              'clojure.edn
              'clojure.walk-test
+             'clojure.zip-test
              'cljs.letfn-test
              'cljs.reducers-test
              'cljs.binding-test
