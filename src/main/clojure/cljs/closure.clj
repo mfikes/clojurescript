@@ -620,7 +620,7 @@
           (util/debug-prn (str "Copying cached " f " to " target)))
         (util/mkdirs target)
         (spit target (slurp f))
-        (.setLastModified target (util/last-modified source-file))))))
+        (util/set-last-modified target (util/last-modified source-file) opts)))))
 
 (defn find-sources
   "Given a Compilable, find sources and return a sequence of IJavaScript."
@@ -683,7 +683,7 @@
        (util/debug-prn "Copying" (str url) "to" (str out-file)))
      (util/mkdirs out-file)
      (spit out-file content)
-     (.setLastModified ^File out-file (util/last-modified url))
+     (util/set-last-modified out-file (util/last-modified url) opts)
      out-file)))
 
 (defn compile-from-jar
@@ -2139,7 +2139,7 @@
         (spit out-file (transpile opts res js))
         (spit out-file (deps/-source js)))
       (when res
-        (.setLastModified ^File out-file (util/last-modified res))))
+        (util/set-last-modified out-file (util/last-modified res) opts)))
     (if (map? js)
       (merge js ijs)
       ijs)))
@@ -2179,7 +2179,7 @@
             (util/debug-prn "Copying" (str source-url) "to" (str out-file)))
           (util/mkdirs out-file)
           (spit out-file (slurp source-url))
-          (.setLastModified ^File out-file (util/last-modified source-url))))
+          (util/set-last-modified out-file (util/last-modified source-url) opts)))
       js)))
 
 (comment
@@ -3250,10 +3250,10 @@
     {:ns ns-sym}))
 
 (defn mark-cljs-ns-for-recompile!
-  [ns-sym output-dir]
-  (let [s (target-file-for-cljs-ns ns-sym output-dir)]
+  [ns-sym opts]
+  (let [s (target-file-for-cljs-ns ns-sym (:output-dir opts))]
     (when (.exists s)
-      (.setLastModified s 5000))))
+      (util/set-last-modified s 500 opts))))
 
 (defn cljs-dependents-for-macro-namespaces
   [state namespaces]
@@ -3358,7 +3358,7 @@
                     (doseq [ns nses]
                       (require ns :reload))
                     (doseq [ns (cljs-dependents-for-macro-namespaces compiler-env nses)]
-                      (mark-cljs-ns-for-recompile! ns (:output-dir opts)))))
+                      (mark-cljs-ns-for-recompile! ns opts))))
                 (println "Change detected, recompiling ...")
                 (flush)
                 (buildf))

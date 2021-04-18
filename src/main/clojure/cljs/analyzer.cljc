@@ -4600,7 +4600,9 @@
    (defn write-analysis-cache
      ([ns cache-file]
        (write-analysis-cache ns cache-file nil))
-     ([ns ^File cache-file src]
+     ([ns cache-file src]
+       (write-analysis-cache ns cache-file src nil))
+     ([ns ^File cache-file src opts]
       (util/mkdirs cache-file)
       (dump-specs ns)
       (let [ext (util/ext cache-file)
@@ -4613,7 +4615,7 @@
                    (with-open [os (io/output-stream cache-file)]
                      (write (writer os :json transit-write-opts) analysis)))))
       (when src
-        (.setLastModified ^File cache-file (util/last-modified src))))))
+        (util/set-last-modified cache-file (util/last-modified src) opts)))))
 
 #?(:clj
    (defn read-analysis-cache

@@ -216,6 +216,11 @@
           (last (string/split f #"\.jar!/"))
           (strip-user-dir f))))))
 
+(defn set-last-modified [^File file last-modified opts]
+  (if-some [set-fn (:set-last-modified opts)]
+    (set-fn file last-modified)
+    (.setLastModified file last-modified)))
+
 (defn last-modified [src]
   (cond
     (file? src) (.lastModified ^File src)
@@ -232,7 +237,8 @@
       (IllegalArgumentException. (str "Cannot get last modified for " src)))))
 
 (defn changed? [a b]
-  (not (== (last-modified a) (last-modified b))))
+  (not (== (quot (last-modified a) 1000)
+           (quot (last-modified b) 1000))))
 
 (defn file-or-resource [s]
   (or (and (.exists (io/file s)) (io/file s))

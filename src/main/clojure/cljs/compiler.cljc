@@ -1492,7 +1492,7 @@
      (when (or ana/*verbose* (:verbose opts))
        (util/debug-prn "Using cached cljs.core" (str src)))
      (spit dest (slurp cached))
-     (.setLastModified ^File dest (util/last-modified src))
+     (util/set-last-modified dest (util/last-modified src) opts)
      (when (true? (:source-map opts))
        (spit (io/file (str dest ".map"))
          (json/write-str
@@ -1620,7 +1620,8 @@
                      (when (and (true? cache-analysis) output-dir)
                        (ana/write-analysis-cache ns-name
                          (ana/cache-file src (ana/parse-ns src) output-dir :write)
-                         src))
+                         src
+                         opts))
                      ret))))))))))
 
 #?(:clj
@@ -1648,7 +1649,7 @@
                               opts)
                        dest-exists? (.exists dest)
                        ret [(emit-source src dest ext opts) dest-exists?]]
-                   (.setLastModified ^File dest (util/last-modified src))
+                   (util/set-last-modified dest (util/last-modified src) opts)
                    ret))))))))))
 
 #?(:clj
