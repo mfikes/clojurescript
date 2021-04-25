@@ -5940,6 +5940,10 @@ reduces them without incurring seq initialization"
     (if (number? key)
       (-assoc-n coll key val)
       (throw (js/Error. "Subvec's key for assoc must be a number."))))
+  (-contains-key? [coll key]
+    (if (integer? key)
+      (and (<= 0 key) (< key (- end start)))
+      false))
 
   IFind
   (-find [coll n]
