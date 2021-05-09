@@ -1259,9 +1259,7 @@
   (when-not (nil? coll)
     (if (implements? ISeq coll)
       (-first coll)
-      (let [s (seq coll)]
-        (when-not (nil? s)
-          (-first s))))))
+      (recur (seq coll)))))
 
 (defn ^seq rest
   "Returns a possibly empty seq of the items after the first. Calls seq on its
